@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.1
+
+- **Fixed: the bike wasn't found.** A real Range VLT CX advertises only its
+  name and Bosch's discovery service (0xFE02), without the manufacturer data
+  the app was looking for. Bikes are now recognised by either. Without
+  manufacturer data, pairing mode shows as *unknown*: pick the bike and press
+  **Pair selected bike** (Start pairing only auto-pairs a bike that says it's
+  ready).
+- **Fixed: a bike repeating the same advertisement was missed.** BlueZ sends
+  advertisement data once (or from its cache) and afterwards only signal
+  updates; those now count as hearing the bike.
+- After each scan the log lists how many Bluetooth devices were heard in
+  total, their manufacturer IDs and the strongest named ones, and the capture
+  has the full list, to tell "nothing heard" from "not recognised".
+
 ## 0.4.0 – the whole setup journey
 
 - **Add your bike from Home Assistant, without the Flow app.** Bosch bikes the

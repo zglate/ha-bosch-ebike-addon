@@ -359,6 +359,11 @@ class EbikeBridge:
         self._scanning = False
         self._scan_stop_timer = None
         self._scan_heard: dict[str, dict] = {}       # address -> rssi/pairable this scan
+        self._scan_paths: set[str] = set()           # every device heard this scan
+        # Last Bosch manufacturer data per device. BlueZ sends ManufacturerData
+        # once (InterfacesAdded, or when it changes); after that a bike that
+        # keeps advertising the same thing only shows up as RSSI updates.
+        self._bosch_adverts: dict[str, bytes | None] = {}
         self._adopting: set[str] = set()             # device paths being paired
         # Bikes heard nearby (dropdown), the user's pick, and consent to pair it.
         self._nearby = Nearby()
@@ -615,6 +620,7 @@ class EbikeBridge:
             return
         self._scanning = True
         self._scan_heard: dict[str, dict] = {}
+        self._scan_paths = set()
         try:
             adapter.SetDiscoveryFilter({"Transport": "le"})
         except dbus.DBusException as exc:
@@ -637,12 +643,13 @@ class EbikeBridge:
             heard = self._scan_heard
             if heard:
                 log.info("Scan done: heard %s", ", ".join(
-                    f"{a} (signal {i.get('rssi')} dBm, {'ready to pair' if i.get('pairable') else 'not in pairing mode'}"
+                    f"{a} (signal {i.get('rssi')} dBm, {ble_policy.pairing_text(i.get('pairable'))}"
                     f"{', yours' if a in self._known_bikes else ''})" for a, i in heard.items()))
             else:
                 log.info("Scan done: no Bosch eBike heard (is it switched on and within "
                          "range of the Home Assistant host?)")
             self._capture.event("scan_result", heard=heard)
+            self._log_scan_devices()
             self._last_scan_heard = len(heard)
             if self._nearby.prune():
                 self._publish_nearby()
@@ -652,6 +659,40 @@ class EbikeBridge:
                 reply_handler=lambda: self._capture.event("scan_stop"),
                 error_handler=lambda e: self._capture.event("scan_stop_error", error=str(e)))
         return False
+
+    def _log_scan_devices(self) -> None:
+        """Everything the scan heard, Bosch or not: tells "the Pi hears nothing"
+        apart from "the bike doesn't advertise the way we expect"."""
+        try:
+            objects = dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, "/"),
+                                     OM_IFACE).GetManagedObjects()
+        except dbus.DBusException as exc:
+            log.debug("Scan summary: %s", exc)
+            return
+        devices = []
+        for path in sorted(self._scan_paths):
+            props = objects.get(dbus.ObjectPath(path), {}).get(DEVICE_IFACE)
+            if props is None:
+                continue
+            devices.append({
+                "address": str(props.get("Address", "")), "name": str(props.get("Name", "")),
+                "rssi": int(props["RSSI"]) if "RSSI" in props else None,
+                "manufacturer_ids": [f"0x{int(k):04X}" for k in
+                                     props.get("ManufacturerData", {}).keys()],
+                "service_uuids": [str(u) for u in props.get("UUIDs", [])],
+                "service_data": [str(k) for k in props.get("ServiceData", {}).keys()]})
+        self._capture.event("scan_devices", devices=devices)
+        ids: dict[str, int] = {}
+        for d in devices:
+            for m in d["manufacturer_ids"] or ["none"]:
+                ids[m] = ids.get(m, 0) + 1
+        named = sorted((d for d in devices if d["name"]),
+                       key=lambda d: -(d["rssi"] if d["rssi"] is not None else -999))[:8]
+        log.info("Scan heard %d Bluetooth devices in total; manufacturer IDs: %s; "
+                 "strongest named: %s", len(devices),
+                 ", ".join(f"{k}×{v}" for k, v in sorted(ids.items(), key=lambda kv: -kv[1]))
+                 or "none",
+                 ", ".join(f"{d['name']} ({d['rssi']} dBm)" for d in named) or "none")
 
     def _adopt(self, device_path: str, addr: str, info: dict) -> None:
         """Pair with a bike the user agreed to. Two ways in:
@@ -676,8 +717,7 @@ class EbikeBridge:
             if not self._window_open():
                 self._set_pairable(self._pairable_initial)
         log.info("Pairing with Bosch eBike %s (%s, signal %s dBm)", addr,
-                 "ready to pair" if info.get("pairable") else "not in pairing mode",
-                 info.get("rssi"))
+                 ble_policy.pairing_text(info.get("pairable")), info.get("rssi"))
         self._capture.event("pair_attempt", address=addr, path=device_path)
 
         def paired() -> None:
@@ -1186,15 +1226,25 @@ class EbikeBridge:
             session.sweep(forced=True)
         return False
 
-    def _on_bosch_advert(self, device_path: str, payload: bytes, props: dict,
+    def _on_bosch_advert(self, device_path: str, payload: bytes | None, props: dict,
                          live: bool = True) -> None:
-        """Log Bosch advertisements, and connect to the bike if enabled."""
+        """Log Bosch advertisements, and connect to the bike if enabled.
+
+        `payload` is the Bosch manufacturer data, or None when the bike was
+        recognised by its discovery service only (pairing mode unknown then).
+        """
         self._bosch_paths.add(device_path)
-        hex_payload = payload.hex()
+        if payload is None:
+            payload = self._bosch_adverts.get(device_path)
+        self._bosch_adverts[device_path] = payload
         addr = self._device_address(device_path) or device_path
-        info = ble_policy.parse_bosch_advert(payload)
+        info = (ble_policy.parse_bosch_advert(payload) if payload is not None
+                else {"raw": None, "pairable": None, "seen_by": "discovery service 0xFE02"})
         info.update(name=str(props.get("Name", "")),
                     rssi=int(props["RSSI"]) if "RSSI" in props else None, path=device_path)
+        if "AdvertisingFlags" in props:
+            info["advertising_flags"] = bytes(props["AdvertisingFlags"]).hex()
+        hex_payload = payload.hex() if payload is not None else "none"
         if self._adverts_seen.get(device_path) != hex_payload:
             self._adverts_seen[device_path] = hex_payload
             log.info("Bosch advertisement from %s: %s", addr, info)
@@ -1205,7 +1255,7 @@ class EbikeBridge:
         if self._scanning:
             self._scan_heard[addr] = {"rssi": info.get("rssi"), "pairable": info.get("pairable")}
         # The Nearby dropdown and Setup Status show every Bosch bike heard.
-        if self._nearby.heard(addr, device_path, info.get("rssi"), bool(info.get("pairable")),
+        if self._nearby.heard(addr, device_path, info.get("rssi"), info.get("pairable"),
                               addr in self._known_bikes):
             self._publish_nearby()
             self._refresh_setup()
@@ -1213,7 +1263,7 @@ class EbikeBridge:
             return
         if addr in self._known_bikes:
             self._maybe_connect(device_path)
-        elif self._window_open() and info.get("pairable"):
+        elif self._window_open() and info.get("pairable") is True:
             self._adopt(device_path, addr, info)
 
     # ── Nearby dropdown, Setup Status, bike Status ───────────────────────────
@@ -1474,6 +1524,13 @@ class EbikeBridge:
                 return
             props = interfaces[DEVICE_IFACE]
             addr = str(props.get("Address", ""))
+            # A device heard for the first time arrives here, with its
+            # advertisement: the only time BlueZ sends unchanged data.
+            if self._scanning:
+                self._scan_paths.add(str(path))
+            is_bike, payload = ble_policy.bosch_bike_advert(props)
+            if is_bike:
+                self._on_bosch_advert(str(path), payload, props)
             # ServicesResolved may already be True if this is a fast re-bond
             if bool(props.get("ServicesResolved", False)):
                 self._on_services_resolved(str(path), addr)
@@ -1487,10 +1544,13 @@ class EbikeBridge:
             if iface != DEVICE_IFACE:
                 return
 
-            # Bosch advertisements (from any device, bike or not yet known).
-            bosch = changed.get("ManufacturerData", {}).get(ble_policy.BOSCH_COMPANY_ID)
-            if bosch is not None:
-                self._on_bosch_advert(sender_path, bytes(bosch), changed)
+            if self._scanning and ("RSSI" in changed or "ManufacturerData" in changed):
+                self._scan_paths.add(sender_path)
+            # Bosch advertisements (from any device, bike or not yet known):
+            # new data, or the same data again (only RSSI changes then).
+            is_bike, payload = ble_policy.bosch_bike_advert(changed)
+            if is_bike or ("RSSI" in changed and sender_path in self._bosch_adverts):
+                self._on_bosch_advert(sender_path, payload, changed)
             # Every property change of a Bosch-related device goes to the
             # capture (Connected, Paired, Bonded, Address, ServicesResolved ...),
             # including the first connection of a bike we haven't seen yet.
@@ -1579,10 +1639,10 @@ class EbikeBridge:
                     if addr not in self._known_bikes:
                         log.info("Known bonded eBike: %s", addr)
                     self._known_bikes.add(addr)
-            bosch = props.get("ManufacturerData", {}).get(ble_policy.BOSCH_COMPANY_ID)
-            if bosch is not None:
+            is_bike, payload = ble_policy.bosch_bike_advert(props)
+            if is_bike:
                 # Cached by BlueZ: log it, but only connect on a live advert.
-                self._on_bosch_advert(str(path), bytes(bosch), props, live=False)
+                self._on_bosch_advert(str(path), payload, props, live=False)
             if bool(props.get("ServicesResolved", False)):
                 self._on_services_resolved(str(path), addr)
 

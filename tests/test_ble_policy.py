@@ -91,3 +91,14 @@ def test_adapter_auto_picks_first_sorted():
 def test_missing_adapter():
     assert bp.adapter_path_for(ADAPTERS, "hci5") is None
     assert bp.adapter_path_for([], "auto") is None
+
+
+def test_a_bike_is_recognised_by_its_discovery_service_or_manufacturer_data():
+    from ble_policy import BES3_DISCOVERY_UUID, bosch_bike_advert, pairing_text
+    assert bosch_bike_advert({"UUIDs": [BES3_DISCOVERY_UUID.upper()]}) == (True, None)
+    assert bosch_bike_advert({"ManufacturerData": {0x02A6: [0, 0, 2, 0x21, 1, 1]}}) == (
+        True, bytes([0, 0, 2, 0x21, 1, 1]))
+    assert bosch_bike_advert({"UUIDs": ["0000180f-0000-1000-8000-00805f9b34fb"],
+                              "ManufacturerData": {0x004C: [1]}}) == (False, None)
+    assert [pairing_text(p) for p in (True, False, None)] == [
+        "ready to pair", "not in pairing mode", "pairing mode unknown"]

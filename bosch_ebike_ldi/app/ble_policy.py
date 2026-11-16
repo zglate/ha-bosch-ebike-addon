@@ -68,6 +68,29 @@ def should_accept_pairing(address: str | None, pairing_open: bool,
 
 
 BOSCH_COMPANY_ID = 0x02A6
+# Bosch's 16-bit service UUID (Bluetooth SIG member UUID 0xFE02, Robert Bosch
+# GmbH): the "BES3 discovery service" a smart system bike advertises. A real
+# bike was seen advertising only this, its name and flags, with no
+# manufacturer data (that may come in the scan response, or not at all).
+BES3_DISCOVERY_UUID = "0000fe02-0000-1000-8000-00805f9b34fb"
+
+
+def bosch_bike_advert(props) -> tuple[bool, bytes | None]:
+    """Is this Device1 data a Bosch bike advertising? And its manufacturer
+    payload, if any. Recognised by Bosch manufacturer data or the discovery
+    service UUID."""
+    payload = props.get("ManufacturerData", {}).get(BOSCH_COMPANY_ID)
+    payload = bytes(payload) if payload is not None else None
+    uuids = {str(u).lower() for u in props.get("UUIDs", [])}
+    return payload is not None or BES3_DISCOVERY_UUID in uuids, payload
+
+
+def pairing_text(pairable) -> str:
+    """Pairing mode as shown to the user: from the manufacturer data when the
+    bike sent it, else unknown (never guessed)."""
+    if pairable is None:
+        return "pairing mode unknown"
+    return "ready to pair" if pairable else "not in pairing mode"
 
 
 def parse_bosch_advert(payload: bytes) -> dict:

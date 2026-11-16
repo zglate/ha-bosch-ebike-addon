@@ -382,6 +382,22 @@ class Control(dbus.service.Object):
             device.update("org.bluez.Device1", ServicesResolved=True)
 
     @dbus.service.method("test.FakeBluez", in_signature="s")
+    def AdvertiseDiscoveryOnly(self, address):
+        """Like the real Range VLT CX: name + service 0xFE02, no manufacturer
+        data. Repeats are RSSI updates only."""
+        path = device_path(address)
+        if path not in ROOT.objects:
+            device = Device(BUS, address, is_bike=True, paired=False)
+            device.interfaces["org.bluez.Device1"].update(
+                RSSI=dbus.Int16(-66), AdvertisingFlags=dbus.Array(b"\x05", signature="y"),
+                UUIDs=dbus.Array(["0000fe02-0000-1000-8000-00805f9b34fb"], signature="s"))
+            ROOT.add(device)
+            return
+        device = ROOT.objects[path]
+        rssi = int(device.interfaces["org.bluez.Device1"].get("RSSI", -66))
+        device.update("org.bluez.Device1", RSSI=dbus.Int16(-67 if rssi == -66 else -66))
+
+    @dbus.service.method("test.FakeBluez", in_signature="s")
     def FailPairing(self, address):
         """Pair() with this bike will fail (after its services resolved)."""
         STATE["fail_pair"].append(device_path(address))
@@ -396,12 +412,25 @@ class Control(dbus.service.Object):
 
     @dbus.service.method("test.FakeBluez", in_signature="sayb")
     def Advertise(self, address, payload, paired):
-        """A bike that is on and advertising, not yet connected."""
-        device = self._device(address, is_bike=True, paired=paired)
-        device.update("org.bluez.Device1", RSSI=dbus.Int16(-60),
-                      ManufacturerData=dbus.Dictionary(
-                          {dbus.UInt16(0x02A6): dbus.Array(bytes(payload), signature="y")},
-                          signature="qv"))
+        """A bike that is on and advertising, not yet connected.
+
+        Like BlueZ: a new device arrives (InterfacesAdded) with its
+        advertisement data; after that only what changed is signalled, so the
+        same advert again is just an RSSI update.
+        """
+        data = dbus.Dictionary(
+            {dbus.UInt16(0x02A6): dbus.Array(bytes(payload), signature="y")}, signature="qv")
+        path = device_path(address)
+        if path not in ROOT.objects:
+            device = Device(BUS, address, is_bike=True, paired=paired)
+            device.interfaces["org.bluez.Device1"].update(RSSI=dbus.Int16(-60),
+                                                          ManufacturerData=data)
+            ROOT.add(device)
+            return
+        device = ROOT.objects[path]
+        rssi = int(device.interfaces["org.bluez.Device1"].get("RSSI", -60))
+        device.update("org.bluez.Device1", RSSI=dbus.Int16(-61 if rssi == -60 else -60),
+                      ManufacturerData=data)
 
     @dbus.service.method("test.FakeBluez", in_signature="sbbay")
     def Connect(self, address, is_bike, resolve, snapshot):

@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from ble_policy import pairing_text
+
 
 def setup_status(known: list[str], connected: list[str], strangers: list[tuple[str, dict]],
                  pairing_open: bool, last_scan_heard: int | None) -> tuple[str, dict, str | None]:
@@ -33,7 +35,7 @@ def setup_status(known: list[str], connected: list[str], strangers: list[tuple[s
 def setup_notification(strangers: list[tuple[str, dict]]) -> str:
     heard = "\n".join(
         f"- `{a}`: signal {b['rssi']} dBm, "
-        f"{'**ready to pair**' if b['pairable'] else 'not in pairing mode'}"
+        f"{'**ready to pair**' if b['pairable'] else pairing_text(b['pairable'])}"
         for a, b in strangers) or "- none yet. Switch the bike on next to the host."
     return f"""\
 No bike has been added yet. Two ways to add yours:

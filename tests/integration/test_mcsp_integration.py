@@ -522,3 +522,49 @@ def test_a_failed_pairing_never_makes_the_bike_ours(harness):
         assert any(p.endswith("dev_D0_00_00_00_00_07") for p in harness.state()["disconnect_calls"])
     finally:
         sup.server.shutdown()
+
+
+def test_a_bike_repeating_the_same_advert_is_heard(harness):
+    """Real BlueZ: the advert data arrives once (or from its cache at start);
+    after that the same advert only changes RSSI. The bike must still be heard,
+    and the scan summary must list every device heard."""
+    harness.control.Advertise(NEW_BIKE, NOT_READY, False)      # cached before start
+    harness.start_bridge(open_pairing_on_start=False, env={"BOSCH_SCAN_FOR_SEC": "3"})
+    wait_for(lambda: harness.state()["discovery"], "scan started")
+    harness.control.Advertise(NEW_BIKE, NOT_READY, False)      # RSSI-only update
+    wait_for(lambda: any(o.startswith(NEW_BIKE) for o in (harness.mqtt.json(
+        "homeassistant/select/bosch_ebike_bridge_nearby/config") or {}).get("options", [])),
+        "bike in the dropdown")
+    summary = wait_for(lambda: [e for e in harness.capture_events()
+                                if e["kind"] == "scan_devices" and e["devices"]],
+                       "scan summary", timeout=15)[0]
+    assert summary["devices"][0]["address"] == NEW_BIKE
+    assert summary["devices"][0]["manufacturer_ids"] == ["0x02A6"]
+
+
+def test_a_bike_advertising_only_its_discovery_service_can_be_picked_and_paired(harness):
+    """What the real Range VLT CX sends: name, flags and service 0xFE02, no
+    manufacturer data. It must appear (pairing mode unknown) and pair when picked."""
+    harness.start_bridge(open_pairing_on_start=False, env={"BOSCH_SCAN_FOR_SEC": "3"})
+    harness.control.EnableMcsp(NEW_BIKE, json.dumps({"values": VALUES}))
+    harness.control.AdvertiseDiscoveryOnly(NEW_BIKE)
+    option = wait_for(lambda: next((o for o in (harness.mqtt.json(
+        "homeassistant/select/bosch_ebike_bridge_nearby/config") or {}).get("options", [])
+        if o.startswith(NEW_BIKE)), None), "bike in the dropdown")
+    assert "pairing mode unknown" in option
+    assert harness.state()["pair_calls"] == []           # never without consent
+    harness.mqtt.client.publish("bosch_ebike/bridge/nearby/set", option)
+    wait_for(lambda: harness.mqtt.get("bosch_ebike/bridge/nearby/state") == option, "picked")
+    harness.mqtt.client.publish("bosch_ebike/bridge/pair_selected/set", "PRESS")
+    wait_for(lambda: harness.state()["pair_bondable"] == [True], "paired")
+    wait_for(lambda: (harness.mqtt.json(f"bosch_ebike/{NEW_SLUG}/status") or {})
+             .get("state", "").startswith(("Exploring", "Connected")), "bike status")
+
+
+def test_a_discovery_only_bike_is_not_auto_paired_in_the_window(harness):
+    harness.start_bridge(pairing_window=60, env={"BOSCH_SCAN_FOR_SEC": "3"})
+    harness.control.AdvertiseDiscoveryOnly(NEW_BIKE)
+    harness.control.AdvertiseDiscoveryOnly(NEW_BIKE)
+    wait_for(lambda: any(e["kind"] == "advert" for e in harness.capture_events()), "heard")
+    time.sleep(1)
+    assert harness.state()["pair_calls"] == []           # pairing mode unknown: wait for a pick

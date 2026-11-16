@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import time
 
+from ble_policy import pairing_text
+
 NONE_OPTION = "— none selected —"
 FORGET_AFTER_SEC = 300          # drop a bike not heard for 5 minutes
 
@@ -19,13 +21,14 @@ class Nearby:
         self._clock = clock
         self._bikes: dict[str, dict] = {}   # address -> {path, rssi, pairable, known, seen}
 
-    def heard(self, address: str, path: str, rssi: int | None, pairable: bool,
+    def heard(self, address: str, path: str, rssi: int | None, pairable: bool | None,
               known: bool) -> bool:
         """Record an advertisement. True if the dropdown options changed."""
         before = self.options()
         if rssi is None and address in self._bikes:    # signal not in this update
             rssi = self._bikes[address]["rssi"]
-        self._bikes[address] = {"path": path, "rssi": rssi, "pairable": bool(pairable),
+        pairable = None if pairable is None else bool(pairable)
+        self._bikes[address] = {"path": path, "rssi": rssi, "pairable": pairable,
                                 "known": known, "seen": self._clock()}
         return self.options() != before
 
@@ -47,8 +50,7 @@ class Nearby:
 
     @staticmethod
     def label(address: str, bike: dict) -> str:
-        state = "ready to pair" if bike["pairable"] else "not in pairing mode"
-        return f"{address} ({state}{', yours' if bike['known'] else ''})"
+        return f"{address} ({pairing_text(bike['pairable'])}{', yours' if bike['known'] else ''})"
 
     def options(self) -> list[str]:
         return [NONE_OPTION] + sorted(self.label(a, b) for a, b in self._bikes.items())
