@@ -156,7 +156,7 @@ def test_reads_fall_back_to_the_other_source_address(harness):
 def test_connects_as_central_to_an_advertising_bike(harness):
     harness.start_bridge(bikes=[{"address": SECOND_BIKE, "name": "Second"}])
     enable_mcsp(harness, address=SECOND_BIKE)
-    harness.control.Advertise(SECOND_BIKE, dbus.ByteArray(bytes([0, 0, 2, 0x21, 1, 1])))
+    harness.control.Advertise(SECOND_BIKE, dbus.ByteArray(bytes([0, 0, 2, 0x21, 1, 1])), True)
     wait_for(lambda: harness.state()["connect_calls"], "Connect() call")
     topic = "bosch_ebike/d0_00_00_00_00_02/mcsp"
     wait_for(lambda: (harness.mqtt.json(topic) or {}).get("motor_power") == 250,
@@ -177,7 +177,7 @@ def test_other_notifying_characteristics_are_recorded(harness):
 
 def test_report_and_capture_contain_everything(harness):
     harness.start_bridge()
-    harness.control.Advertise(BIKE, dbus.ByteArray(bytes([0, 0, 2, 0x21, 1, 0])))
+    harness.control.Advertise(BIKE, dbus.ByteArray(bytes([0, 0, 2, 0x21, 1, 0])), True)
     enable_mcsp(harness)
     harness.control.Connect(BIKE, True, True, dbus.ByteArray(SNAPSHOT))
     wait_sweep_done(harness)
@@ -219,14 +219,16 @@ def test_not_ready_bike_gets_the_start_up_set_again(harness):
     assert "first_not_ready" in status(harness)["milestones"]
 
 
-def test_someone_elses_bike_is_never_connected(harness):
-    harness.start_bridge()
+def test_someone_elses_bike_is_never_touched_outside_the_pairing_window(harness):
+    harness.start_bridge(open_pairing_on_start=False)
     stranger = "E0:00:00:00:00:09"
-    harness.control.Advertise(stranger, dbus.ByteArray(bytes([0, 0, 2, 0x21, 1, 1])))
-    wait_for(lambda: any(e["kind"] == "connect_skipped" for e in harness.capture_events()),
-             "skip recorded")
+    # Even a bike that says "ready to pair" is left alone unless the user
+    # opened the pairing window.
+    harness.control.Advertise(stranger, dbus.ByteArray(bytes([0, 0, 2, 0x21, 1, 1])), False)
+    wait_for(lambda: any(e["kind"] == "advert" and e["address"] == stranger
+                         for e in harness.capture_events()), "advert recorded")
     time.sleep(1)
-    assert harness.state()["connect_calls"] == []
+    assert harness.state()["connect_calls"] == [] and harness.state()["pair_calls"] == []
 
 
 def test_bike_is_released_after_exploring_and_not_reconnected(harness):
@@ -235,10 +237,10 @@ def test_bike_is_released_after_exploring_and_not_reconnected(harness):
                          env={"BOSCH_CONNECT_RETRY_SEC": "0", "BOSCH_CONNECT_GAP_SEC": "0"})
     enable_mcsp(harness, address=SECOND_BIKE)
     payload = dbus.ByteArray(bytes([0, 0, 2, 0x21, 1, 1]))
-    harness.control.Advertise(SECOND_BIKE, payload)
+    harness.control.Advertise(SECOND_BIKE, payload, True)
     wait_for(lambda: harness.state()["disconnect_calls"], "release", timeout=90)
     # The bike keeps advertising, but the add-on holds off for hours.
-    harness.control.Advertise(SECOND_BIKE, dbus.ByteArray(bytes([0, 0, 2, 0x21, 1, 0])))
+    harness.control.Advertise(SECOND_BIKE, dbus.ByteArray(bytes([0, 0, 2, 0x21, 1, 0])), True)
     time.sleep(2)
     assert len(harness.state()["connect_calls"]) == 1
 
@@ -275,3 +277,47 @@ def test_mcsp_can_be_switched_off(harness):
     wait_for(lambda: status(harness).get("state") == "MCSP disabled in options",
              "disabled status")
     assert harness.mcsp_log()["messages"] == []
+
+
+# ── Home Assistant finds the bike by itself ──────────────────────────────────
+
+from test_supervisor import FakeSupervisor  # noqa: E402
+
+NEW_BIKE = "D0:00:00:00:00:07"
+NEW_SLUG = "d0_00_00_00_00_07"
+READY = dbus.ByteArray(bytes([0, 0, 2, 0x21, 1, 1]))       # advert: pairable
+NOT_READY = dbus.ByteArray(bytes([0, 0, 2, 0x21, 1, 0]))
+
+
+def test_scans_by_itself_while_no_bike_is_connected(harness):
+    harness.start_bridge(open_pairing_on_start=False)
+    log = wait_for(lambda: (d := harness.state()["discovery"]) and ["stop"] in d and d,
+                   "a short scan", timeout=10)
+    assert ["filter", {"Transport": "le"}] in log and ["start"] in log
+
+
+def test_start_pairing_pairs_a_bike_that_is_ready_and_explores_it(harness):
+    harness.start_bridge()                       # pairing window open
+    enable_mcsp(harness, address=NEW_BIKE)
+    harness.control.Advertise(NEW_BIKE, READY, False)
+    wait_for(lambda: harness.state()["pair_calls"], "Pair() call")
+    wait_for(lambda: (harness.mqtt.json(f"bosch_ebike/{NEW_SLUG}/mcsp") or {})
+             .get("motor_power") == 250, "MCSP values from the newly paired bike")
+    # Remembered for next time.
+    state = json.loads((harness.tmp / "state" / "explorer_state.json").read_text())
+    assert state[NEW_BIKE]["adopted"]
+
+
+def test_a_bike_not_in_pairing_mode_is_only_announced(harness):
+    sup = FakeSupervisor()
+    try:
+        harness.start_bridge(env={"SUPERVISOR_URL": sup.url, "SUPERVISOR_TOKEN": "tok"})
+        harness.control.Advertise(NEW_BIKE, NOT_READY, False)
+        note = wait_for(lambda: [b for m, p, _, b in sup.requests
+                                 if m == "POST" and b.get("notification_id")
+                                 == "bosch_ebike_nearby_d00000000007"], "nearby notice")[0]
+        assert NEW_BIKE in note["message"] and "pairing mode" in note["message"]
+        time.sleep(1)
+        assert harness.state()["pair_calls"] == [] and harness.state()["connect_calls"] == []
+    finally:
+        sup.server.shutdown()

@@ -98,6 +98,23 @@ Check **Settings → System → Hardware** for a Bluetooth adapter and that the 
 `adapter` option matches it (usually `hci0`), then restart the app.
 """
 
+BIKE_NEARBY = """\
+A Bosch eBike is advertising nearby: `{address}` (signal {rssi} dBm).
+
+To let Home Assistant pair with it: switch the bike on next to the Home \
+Assistant host, put it in **pairing mode** (see the app's Documentation \
+tab), and press **Start pairing** on the *Bosch eBike Bridge* device. The \
+app pairs with a bike only while that window is open and the bike itself \
+says it's ready to pair, so it never takes a neighbour's bike.
+"""
+
+PAIRING_FAILED = """\
+Pairing with the Bosch eBike `{address}` didn't complete: *{reason}*
+
+Make sure the bike is on and in pairing mode, then press **Start pairing** \
+again.
+"""
+
 BIKE_FOUND = """\
 **{name}** connected over Bluetooth (address `{address}`).
 

@@ -43,7 +43,28 @@ Two ways in:
 If it doesn't appear under Local apps, check **Settings → System → Logs**
 with **Supervisor** selected for errors about `config.yaml`.
 
-## Pair the bike (once, for the LDI)
+## Let Home Assistant find the bike (recommended)
+
+The app scans for Bosch bikes itself. To pair with yours:
+
+1. Switch the bike on next to the Home Assistant host and put it in
+   **pairing mode**. On Bosch controllers this is typically a long press of
+   the power button until the light or display shows the Bluetooth/blue
+   pairing indication; check your controller's manual.
+2. Press **Start pairing** on the *Bosch eBike Bridge* device (Settings →
+   Devices & services → Devices).
+3. Within the 5-minute window the app pairs with the bike that says it's
+   ready to pair, then explores it over MCSP. A notification shows its
+   address with a ready-to-paste `bikes` entry.
+
+It only pairs while the window is open **and** the bike signals pairing
+mode, so it can't take a neighbour's bike. A Bosch bike it hears that isn't
+in pairing mode just gets a "found nearby" notification.
+
+This gives the MCSP data. The official LDI stream additionally needs the
+Flow app step below (Bosch only streams LDI to accessories added there).
+
+## Pair the bike in the Flow app (for the LDI)
 
 The add-on accepts a new bike only during a **5-minute pairing window**,
 opened with the **Start pairing** button on the *Bosch eBike Bridge* device.

@@ -106,6 +106,18 @@ class Adapter(BluezObject):
     def UnregisterAdvertisement(self, path):
         STATE["unregistrations"] += 1
 
+    @dbus.service.method("org.bluez.Adapter1", in_signature="a{sv}")
+    def SetDiscoveryFilter(self, properties):
+        STATE["discovery"].append(["filter", {str(k): str(v) for k, v in properties.items()}])
+
+    @dbus.service.method("org.bluez.Adapter1")
+    def StartDiscovery(self):
+        STATE["discovery"].append(["start"])
+
+    @dbus.service.method("org.bluez.Adapter1")
+    def StopDiscovery(self):
+        STATE["discovery"].append(["stop"])
+
     @dbus.service.method("org.bluez.Adapter1", in_signature="o")
     def RemoveDevice(self, path):
         STATE["removed_devices"].append(str(path))
@@ -289,7 +301,10 @@ class Device(BluezObject):
 
     @dbus.service.method("org.bluez.Device1")
     def Pair(self):
+        """Like BlueZ: connect if needed, bond, then services resolve."""
         STATE["pair_calls"].append(self.path)
+        self.update("org.bluez.Device1", Paired=True, Bonded=True)
+        GLib.idle_add(lambda: CONTROL.connect(self, resolve=True) or False)
 
     @dbus.service.method("org.bluez.Device1")
     def Disconnect(self):
@@ -360,10 +375,10 @@ class Control(dbus.service.Object):
     def EnableMcsp(self, address, config_json):
         self.mcsp_config[address.upper()] = json.loads(config_json)
 
-    @dbus.service.method("test.FakeBluez", in_signature="say")
-    def Advertise(self, address, payload):
+    @dbus.service.method("test.FakeBluez", in_signature="sayb")
+    def Advertise(self, address, payload, paired):
         """A bike that is on and advertising, not yet connected."""
-        device = self._device(address, is_bike=True, paired=True)
+        device = self._device(address, is_bike=True, paired=paired)
         device.update("org.bluez.Device1", RSSI=dbus.Int16(-60),
                       ManufacturerData=dbus.Dictionary(
                           {dbus.UInt16(0x02A6): dbus.Array(bytes(payload), signature="y")},
@@ -450,7 +465,7 @@ STATE = {"advertisements": [], "unregistrations": 0, "removed_devices": [],
          "notify_started": [], "property_sets": [], "agent_errors": [],
          "default_agent": None, "agent_capability": None,
          "agent_registrations": 0, "gatt_writes": [], "connect_calls": [],
-         "pair_calls": [], "disconnect_calls": []}
+         "pair_calls": [], "disconnect_calls": [], "discovery": []}
 MCSP_LOG = {"commands": [], "messages": []}
 
 if __name__ == "__main__":

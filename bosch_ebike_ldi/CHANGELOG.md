@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.2
+
+- **Home Assistant finds the bike itself.** The app now scans for Bosch bikes
+  (a short scan every minute while no bike is connected, continuously during
+  the pairing window). Press **Start pairing** with the bike in pairing mode
+  and the app pairs with it and explores it. No Flow-app step needed for MCSP.
+- A Bosch bike heard nearby but not in pairing mode gets a "found nearby"
+  notification instead of being ignored silently.
+- Outside the pairing window the adapter's *Pairable* setting is put back as
+  it was (BlueZ switches it on when a pairing agent registers).
+
 ## 0.3.1
 
 - **Setup problems now show up in Home Assistant** as notifications, with what

@@ -101,6 +101,12 @@ STALE_BOND_THRESHOLD = 3
 CONNECT_RETRY_SEC = float(os.environ.get("BOSCH_CONNECT_RETRY_SEC", 60))      # env: tests
 CONNECT_GLOBAL_GAP_SEC = float(os.environ.get("BOSCH_CONNECT_GAP_SEC", 30))   # env: tests
 
+# Our own Bluetooth scanning, so bikes are found even if Home Assistant's
+# Bluetooth integration isn't scanning on this adapter: a short scan every
+# SCAN_EVERY_SEC while no bike is connected, and continuously during pairing.
+SCAN_EVERY_SEC = int(os.environ.get("BOSCH_SCAN_EVERY_SEC", 60))              # env: tests
+SCAN_FOR_SEC = int(os.environ.get("BOSCH_SCAN_FOR_SEC", 15))                  # env: tests
+
 # Where the debug capture and report go (the add-on maps /share), and where
 # the explorer remembers which firmware it has already swept.
 CAPTURE_DIR = "/share/bosch_ebike"
@@ -337,6 +343,13 @@ class EbikeBridge:
             self._explorer_state = json.loads(STATE_FILE.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             self._explorer_state = {}
+        # Bikes paired through "Start pairing" stay known across restarts.
+        self._known_bikes |= {a for a, s in self._explorer_state.items()
+                              if isinstance(s, dict) and s.get("adopted")}
+        self._scanning = False
+        self._scan_stop_timer = None
+        self._adopting: set[str] = set()             # device paths being paired
+        self._nearby_announced: set[str] = set()     # strangers, notified once
 
         mqtt_cfg = config["mqtt"]
         self._mqtt = HaMqttPublisher(
@@ -543,9 +556,88 @@ class EbikeBridge:
         self._set_pairable(True)
         self._publish_pairing_state()
         self._readvertise()
+        # Look for bikes in pairing mode for the whole window.
+        if self._mcsp_connect and self._adapter_path:
+            self._start_scan(PAIRING_WINDOW_SEC)
         # Re-advertise privately again once the window elapses, so we don't stay
         # discoverable forever. GLib timeout fires on the main loop thread.
         GLib.timeout_add_seconds(PAIRING_WINDOW_SEC + 1, self._pairing_window_elapsed)
+
+    # ── Finding bikes ourselves ──────────────────────────────────────────────
+
+    def _scan_tick(self) -> bool:
+        """Every SCAN_EVERY_SEC: a short scan while no bike is connected."""
+        connected = any(b.get("char_path") for b in self._bikes.values())
+        if self._mcsp_connect and not connected and not self._scanning:
+            self._start_scan(SCAN_FOR_SEC)
+        return True
+
+    def _start_scan(self, seconds: int) -> None:
+        """Bluetooth LE discovery from our own D-Bus client.
+
+        BlueZ keeps discovery per client and merges filters, so this doesn't
+        change Home Assistant's own scanning.
+        """
+        adapter = dbus.Interface(
+            self._bus.get_object(BLUEZ_SERVICE, self._adapter_path), ADAPTER_IFACE)
+        if self._scan_stop_timer is not None:
+            GLib.source_remove(self._scan_stop_timer)
+        self._scan_stop_timer = GLib.timeout_add_seconds(seconds, self._stop_scan)
+        if self._scanning:
+            return
+        self._scanning = True
+        try:
+            adapter.SetDiscoveryFilter({"Transport": "le"})
+        except dbus.DBusException as exc:
+            log.debug("SetDiscoveryFilter: %s", exc)
+        adapter.StartDiscovery(
+            reply_handler=lambda: self._capture.event("scan_start", seconds=seconds),
+            error_handler=lambda e: self._capture.event("scan_error", error=str(e)))
+
+    def _stop_scan(self) -> bool:
+        self._scan_stop_timer = None
+        if self._scanning:
+            self._scanning = False
+            dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, self._adapter_path),
+                           ADAPTER_IFACE).StopDiscovery(
+                reply_handler=lambda: self._capture.event("scan_stop"),
+                error_handler=lambda e: self._capture.event("scan_stop_error", error=str(e)))
+        return False
+
+    def _adopt(self, device_path: str, addr: str, info: dict) -> None:
+        """Pair with a bike that says it's ready to pair, during the window.
+
+        The user pressed Start pairing (consent on our side) and the bike's
+        advertisement says pairable (consent on the bike's side). After this
+        the bike is known and reconnects by itself.
+        """
+        if device_path in self._adopting:
+            return
+        self._adopting.add(device_path)
+        self._central_paths.add(device_path)
+        log.info("Pairing with Bosch eBike %s (ready to pair, signal %s dBm)",
+                 addr, info.get("rssi"))
+        self._capture.event("pair_attempt", address=addr, path=device_path)
+
+        def paired() -> None:
+            self._known_bikes.add(addr)
+            self._explorer_state.setdefault(addr, {})["adopted"] = (
+                datetime.now(timezone.utc).isoformat(timespec="seconds"))
+            self._save_state()
+            self._capture.event("paired", address=addr)
+            log.info("Paired with %s", addr)
+
+        def failed(exc) -> None:
+            self._adopting.discard(device_path)
+            log.warning("Pairing with %s failed: %s", addr, exc.get_dbus_name())
+            self._capture.event("pair_failed", address=addr, error=str(exc))
+            supervisor.notify(f"pair_{addr.replace(':', '').lower()}",
+                              "Bosch eBike: pairing failed",
+                              supervisor.PAIRING_FAILED.format(
+                                  address=addr, reason=exc.get_dbus_name()))
+
+        dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, device_path), DEVICE_IFACE).Pair(
+            reply_handler=paired, error_handler=failed, timeout=60)
 
     def _pairing_window_elapsed(self) -> bool:
         if not self._window_open():
@@ -985,18 +1077,27 @@ class EbikeBridge:
         """Log Bosch advertisements, and connect to the bike if enabled."""
         self._bosch_paths.add(device_path)
         hex_payload = payload.hex()
+        addr = self._device_address(device_path) or device_path
+        info = ble_policy.parse_bosch_advert(payload)
+        info.update(name=str(props.get("Name", "")),
+                    rssi=int(props["RSSI"]) if "RSSI" in props else None, path=device_path)
         if self._adverts_seen.get(device_path) != hex_payload:
             self._adverts_seen[device_path] = hex_payload
-            addr = self._device_address(device_path) or device_path
-            info = ble_policy.parse_bosch_advert(payload)
-            info.update(name=str(props.get("Name", "")), rssi=props.get("RSSI"),
-                        path=device_path)
             log.info("Bosch advertisement from %s: %s", addr, info)
-            self._capture.advert(addr, {k: (int(v) if isinstance(v, dbus.Int16) else v)
-                                        for k, v in info.items()})
+            self._capture.advert(addr, info)
             self._capture.event("advert", address=addr, live=live, **info)
-        if self._mcsp_connect and live:
+        if not (self._mcsp_connect and live):
+            return
+        if addr in self._known_bikes:
             self._maybe_connect(device_path)
+        elif self._window_open() and info.get("pairable"):
+            self._adopt(device_path, addr, info)
+        elif addr not in self._nearby_announced:
+            self._nearby_announced.add(addr)
+            supervisor.notify(f"nearby_{addr.replace(':', '').lower()}",
+                              "Bosch eBike found nearby",
+                              supervisor.BIKE_NEARBY.format(address=addr,
+                                                            rssi=info.get("rssi")))
 
     def _maybe_connect(self, device_path: str) -> None:
         """Connect to one of *your* advertising bikes as a central (the Flow
@@ -1294,6 +1395,9 @@ class EbikeBridge:
         if self._open_pairing_on_start:
             self.start_pairing()
         else:
+            # BlueZ switches the adapter to pairable once a default agent is
+            # registered; outside the pairing window put it back as found.
+            self._set_pairable(self._pairable_initial)
             self._publish_pairing_state()
             self._readvertise()
 
@@ -1321,6 +1425,8 @@ class EbikeBridge:
 
         self._monitor()
         GLib.timeout_add_seconds(ADVERTISING_WATCHDOG_SEC, self._advertising_watchdog)
+        GLib.timeout_add_seconds(SCAN_EVERY_SEC, self._scan_tick)
+        GLib.timeout_add_seconds(2, lambda: self._scan_tick() and False)   # first scan now
 
         def _shutdown(signum, frame) -> None:
             log.info("Caught signal %d – shutting down", signum)
