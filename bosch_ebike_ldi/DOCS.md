@@ -53,11 +53,19 @@ Then, either:
 - **Pick it:** choose your bike in **Nearby Bosch eBikes** and press **Pair
   selected bike**. Your pick is the consent. Whether a bike accepts pairing
   outside its pairing mode is **not tested on a real bike yet**; if pairing
-  fails, put the bike in pairing mode and try again (or use the other way).
+  fails, put the bike in pairing mode (below) and try again.
   The strongest signal is usually the bike right next to the host.
-- **Pairing mode:** put the bike in pairing mode, then press **Start
+- **Pairing mode:** put the bike in pairing mode (below), then press **Start
   pairing**. For 5 minutes the app pairs with a bike that says it's ready to
   pair.
+
+**Pairing mode, System Controller** (from Bosch's manual): switch the bike
+on and don't ride; press and hold the **on/off button for more than 3
+seconds**; let go when the **top bar of the charge indicator flashes blue**.
+Bosch doesn't say how long it stays in pairing mode, so press **Pair
+selected bike** right away; if the bike has gone quiet, the app waits up to
+3 minutes for it and pairs the moment it's heard. With a Kiox or other
+display, see its manual for "pairing".
 
 Once paired, the setup notification goes away, the bike gets its own device
 (model, serial number and firmware version read from the bike), and the app

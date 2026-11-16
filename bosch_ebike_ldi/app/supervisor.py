@@ -28,27 +28,39 @@ def _base() -> str:
     return os.environ.get("SUPERVISOR_URL", "http://supervisor")
 
 
-def _request(method: str, path: str, body: dict | None = None) -> dict | None:
-    """Call the Supervisor; return the parsed JSON body, or None on failure."""
+def _call(method: str, path: str, body: dict | None = None) -> tuple[int | None, bytes]:
+    """Call the Supervisor: (HTTP status, raw body). Status None = no answer."""
     token = os.environ.get("SUPERVISOR_TOKEN")
     if not token:
-        return None
+        return None, b"no SUPERVISOR_TOKEN"
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(
         _base() + path, data=data, method=method,
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT_SEC) as resp:
-            raw = resp.read()
+            return resp.status, resp.read()
     except urllib.error.HTTPError as exc:
-        raw = exc.read()
+        return exc.code, exc.read()
     except (urllib.error.URLError, OSError) as exc:
-        log.debug("Supervisor %s %s failed: %s", method, path, exc)
+        return None, str(exc).encode()
+
+
+def _request(method: str, path: str, body: dict | None = None) -> dict | None:
+    """Call the Supervisor; the parsed JSON body (also for errors), or None."""
+    status, raw = _call(method, path, body)
+    if status is None:
+        log.debug("Supervisor %s %s failed: %s", method, path, raw.decode(errors="replace"))
         return None
     try:
         return json.loads(raw or b"{}")
     except ValueError:
         return None
+
+
+def _describe(status: int | None, raw: bytes) -> str:
+    text = raw.decode(errors="replace").strip()[:200]
+    return f"HTTP {status}: {text}" if status is not None else text
 
 
 def mqtt_service() -> tuple[dict | None, str]:
@@ -61,17 +73,50 @@ def mqtt_service() -> tuple[dict | None, str]:
     return None, str(reply.get("message", "no MQTT service registered"))
 
 
+def check_core_api() -> str:
+    """One line for the log: can this app reach Home Assistant's API?
+    (Notifications and the device link need it.)"""
+    status, raw = _call("GET", "/core/api/")
+    if status == 200:
+        return "Home Assistant API reachable (notifications on)"
+    return f"Home Assistant API NOT reachable, so no notifications: {_describe(status, raw)}"
+
+
 def notify(notification_id: str, title: str, message: str) -> bool:
-    """Show (or replace) a notification in Home Assistant."""
-    reply = _request("POST", "/core/api/services/persistent_notification/create",
-                     {"notification_id": f"bosch_ebike_{notification_id}",
-                      "title": title, "message": message})
-    return reply is not None
+    """Show (or replace) a notification in Home Assistant. True only if shown."""
+    full_id = f"bosch_ebike_{notification_id}"
+    status, raw = _call("POST", "/core/api/services/persistent_notification/create",
+                        {"notification_id": full_id, "title": title, "message": message})
+    if status is not None and 200 <= status < 300:
+        log.info("Notification shown in Home Assistant: %s", title)
+        return True
+    if os.environ.get("SUPERVISOR_TOKEN"):
+        log.warning("Could not show notification '%s': %s", title, _describe(status, raw))
+    return False
 
 
 def dismiss(notification_id: str) -> None:
-    _request("POST", "/core/api/services/persistent_notification/dismiss",
-             {"notification_id": f"bosch_ebike_{notification_id}"})
+    status, raw = _call("POST", "/core/api/services/persistent_notification/dismiss",
+                        {"notification_id": f"bosch_ebike_{notification_id}"})
+    if status is not None and not 200 <= status < 300:
+        log.warning("Could not dismiss notification %s: %s", notification_id,
+                    _describe(status, raw))
+
+
+def render_template(template: str) -> str | None:
+    """Render a Home Assistant template (plain-text answer), or None."""
+    status, raw = _call("POST", "/core/api/template", {"template": template})
+    if status == 200:
+        return raw.decode(errors="replace").strip()
+    log.debug("Template failed: %s", _describe(status, raw))
+    return None
+
+
+# The bridge device's page in Home Assistant, found from its dropdown entity.
+BRIDGE_DEVICE_TEMPLATE = (
+    "{{ states.select | selectattr('attributes.friendly_name', 'search', "
+    "'Nearby Bosch eBikes') | map(attribute='entity_id') | map('device_id') "
+    "| select('string') | first | default('') }}")
 
 
 # ── Messages (kept here so they're easy to review and test) ──────────────────
@@ -101,9 +146,10 @@ Check **Settings → System → Hardware** for a Bluetooth adapter and that the 
 PAIRING_FAILED = """\
 Pairing with the Bosch eBike `{address}` didn't complete: *{reason}*
 
-Make sure the bike is on and close to Home Assistant, then pick it in \
-**Nearby Bosch eBikes** and press **Pair selected bike** again (or put the \
-bike in pairing mode and press **Start pairing**).
+Put the bike in pairing mode: switch it on (don't ride), press and hold the \
+System Controller's **on/off button for more than 3 seconds** and let go when \
+the **top bar of its charge indicator flashes blue**. Then pick it in \
+**Nearby Bosch eBikes** on {bridge} and press **Pair selected bike** again.
 """
 
 BIKE_FOUND = """\

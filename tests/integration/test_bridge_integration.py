@@ -151,6 +151,7 @@ class Harness:
                "BOSCH_STATE_DIR": str(self.tmp / "state"),
                "BOSCH_MCSP_SEND_GAP_MS": "1",
                "BOSCH_SCAN_FOR_SEC": "1",
+               "BOSCH_PAIR_RECENT_SEC": "60",     # tests pick right after an advert
                "BOSCH_MCSP_RELEASE_MS": str(release_ms), **(env or {})}
         log = open(self.bridge_log, "w")
         self.bridge = self._spawn([sys.executable, "-u", str(BRIDGE), str(opts_path)],

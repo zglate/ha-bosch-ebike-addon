@@ -174,7 +174,8 @@ def test_other_notifying_characteristics_are_recorded(harness):
     harness.control.ExtraNotify(BIKE, dbus.ByteArray(b"\x01\x02"))
     wait_for(lambda: any(e["kind"] == "gatt_notify" and e["value"] == "0102"
                          for e in harness.capture_events()), "gatt_notify captured")
-    assert status(harness)["state"] == "MCSP not exposed on this connection"
+    wait_for(lambda: status(harness).get("state") == "MCSP not exposed on this connection",
+             "MCSP status published")
 
 
 def test_report_and_capture_contain_everything(harness):
@@ -384,8 +385,9 @@ def test_the_whole_journey_from_no_bike_to_firmware(harness):
         # 1. No bike yet: Setup Status and the setup notification say what to do.
         setup = wait_for(lambda: harness.mqtt.json("bosch_ebike/bridge/setup"), "setup status")
         assert setup["state"].startswith("No bike added yet")
-        assert "Pair selected bike" in wait_for(lambda: notes(sup, "bosch_ebike_setup"),
-                                                "setup notice")[0]["message"]
+        message = wait_for(lambda: notes(sup, "bosch_ebike_setup"), "setup notice")[-1]["message"]
+        assert "Pair selected bike" in message
+        assert "(/config/devices/device/dev123)" in message      # straight to the bridge
 
         # 2. The bike is switched on: it appears in the Nearby dropdown.
         harness.control.EnableMcsp(NEW_BIKE, json.dumps({"values": {
@@ -568,3 +570,45 @@ def test_a_discovery_only_bike_is_not_auto_paired_in_the_window(harness):
     wait_for(lambda: any(e["kind"] == "advert" for e in harness.capture_events()), "heard")
     time.sleep(1)
     assert harness.state()["pair_calls"] == []           # pairing mode unknown: wait for a pick
+
+
+def _pick(harness, address):
+    option = wait_for(lambda: next((o for o in (harness.mqtt.json(
+        "homeassistant/select/bosch_ebike_bridge_nearby/config") or {}).get("options", [])
+        if o.startswith(address)), None), "bike in the dropdown")
+    harness.mqtt.client.publish("bosch_ebike/bridge/nearby/set", option)
+    wait_for(lambda: harness.mqtt.get("bosch_ebike/bridge/nearby/state") == option, "picked")
+    harness.mqtt.client.publish("bosch_ebike/bridge/pair_selected/set", "PRESS")
+
+
+def test_a_quiet_bike_is_paired_on_its_next_advert(harness):
+    """The real bike advertised once, then went quiet. Pair selected bike waits
+    for its next advertisement instead of pairing with a bike not listening."""
+    harness.start_bridge(open_pairing_on_start=False,
+                         env={"BOSCH_PAIR_RECENT_SEC": "0", "BOSCH_SCAN_FOR_SEC": "3"})
+    harness.control.EnableMcsp(NEW_BIKE, json.dumps({"values": VALUES}))
+    harness.control.AdvertiseDiscoveryOnly(NEW_BIKE)
+    _pick(harness, NEW_BIKE)
+    wait_for(lambda: any(e["kind"] == "pair_armed" for e in harness.capture_events()), "waiting")
+    assert harness.mqtt.json("bosch_ebike/bridge/setup")["state"].startswith("Waiting for")
+    time.sleep(1)
+    assert harness.state()["pair_calls"] == []           # not while it's quiet
+    harness.control.AdvertiseDiscoveryOnly(NEW_BIKE)     # it speaks again
+    wait_for(lambda: harness.state()["pair_bondable"] == [True], "paired on the advert")
+
+
+def test_waiting_for_a_quiet_bike_gives_up_and_says_so(harness):
+    sup = FakeSupervisor()
+    try:
+        harness.start_bridge(open_pairing_on_start=False, env={
+            "BOSCH_PAIR_RECENT_SEC": "0", "BOSCH_PAIR_WAIT_SEC": "2",
+            "SUPERVISOR_URL": sup.url, "SUPERVISOR_TOKEN": "tok"})
+        harness.control.AdvertiseDiscoveryOnly(NEW_BIKE)
+        _pick(harness, NEW_BIKE)
+        wait_for(lambda: any(e["kind"] == "pair_wait_expired"
+                             for e in harness.capture_events()), "gave up", timeout=10)
+        note = notes(sup, f"bosch_ebike_pair_{NEW_SLUG.replace('_', '')}")[-1]
+        assert "wasn't heard" in note["message"]
+        assert harness.state()["pair_calls"] == []
+    finally:
+        sup.server.shutdown()

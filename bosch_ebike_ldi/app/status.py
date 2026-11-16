@@ -11,17 +11,32 @@ from datetime import datetime
 
 from ble_policy import pairing_text
 
+# From Bosch's System Controller (BRC3100) manual (pairing with a smartphone).
+PAIRING_MODE_STEPS = ("switch the bike on (don't ride), then press and hold the System Controller's **on/off button for more than 3 seconds** and let go when the **top bar of its charge indicator flashes blue**")
+
+
+BRIDGE = "the *Bosch eBike Bridge* device (Settings → Devices & services → Devices)"
+
 
 def setup_status(known: list[str], connected: list[str], strangers: list[tuple[str, dict]],
-                 pairing_open: bool, last_scan_heard: int | None) -> tuple[str, dict, str | None]:
-    """Returns (state, attributes, setup notification text or None)."""
+                 pairing_open: bool, last_scan_heard: int | None, waiting: str | None = None,
+                 bridge: str = BRIDGE) -> tuple[str, dict, str | None]:
+    """Returns (state, attributes, setup notification text or None).
+
+    `waiting`: a bike picked for pairing that hasn't advertised again yet.
+    `bridge`: how to refer to the bridge device (a link when known).
+    """
     nearby = [{"address": a, "signal_dbm": b["rssi"],
                "ready_to_pair": b["pairable"]} for a, b in strangers]
     attributes = {"bikes": known, "connected": connected, "nearby": nearby,
-                  "pairing_window_open": pairing_open, "last_scan_heard": last_scan_heard}
-    if pairing_open:
-        state = ("Pairing window open: put the bike in pairing mode, or pick it "
-                 "under Nearby Bosch eBikes and press Pair selected bike")
+                  "pairing_window_open": pairing_open, "last_scan_heard": last_scan_heard,
+                  "waiting_to_pair": waiting}
+    if waiting:
+        state = (f"Waiting for {waiting} to advertise, then pairing: bike on, hold the "
+                 "System Controller on/off button >3 s until the top bar flashes blue")
+    elif pairing_open:
+        state = ("Pairing window open: bike on, hold the System Controller on/off button "
+                 ">3 s until the top bar flashes blue, or pick it and press Pair selected bike")
     elif not known:
         state = (f"No bike added yet; {len(strangers)} Bosch bike(s) nearby" if strangers
                  else "No bike added yet; none heard (switch the bike on next to the host)")
@@ -29,28 +44,24 @@ def setup_status(known: list[str], connected: list[str], strangers: list[tuple[s
         state = f"{len(known)} bike(s), {len(connected)} connected"
     else:
         state = f"{len(known)} bike(s), none connected right now"
-    return state[:255], attributes, (None if known else setup_notification(strangers))
+    note = None if known else setup_notification(strangers, bridge)
+    return state[:255], attributes, note
 
 
-def setup_notification(strangers: list[tuple[str, dict]]) -> str:
+def setup_notification(strangers: list[tuple[str, dict]], bridge: str = BRIDGE) -> str:
     heard = "\n".join(
         f"- `{a}`: signal {b['rssi']} dBm, "
         f"{'**ready to pair**' if b['pairable'] else pairing_text(b['pairable'])}"
         for a, b in strangers) or "- none yet. Switch the bike on next to the host."
-    return f"""\
-No bike has been added yet. Two ways to add yours:
+    return f"""No bike has been added yet. To add yours, open {bridge}:
 
-1. **Pairing mode:** put the bike in pairing mode, then press **Start \
-pairing** on the *Bosch eBike Bridge* device. The app pairs with the bike \
-that says it's ready.
-2. **Pick it:** choose it under **Nearby Bosch eBikes** on the same device \
-and press **Pair selected bike**.
+1. Choose your bike under **Nearby Bosch eBikes** (the strongest signal is usually the one next to the host).
+2. Press **Pair selected bike**. The bike may only advertise for a short while, so if it has gone quiet the app waits up to 3 minutes and pairs the moment it hears it. To make it advertise, put it in pairing mode: {PAIRING_MODE_STEPS}. (Other controls or displays: see their manual for "pairing".)
 
 Bosch bikes heard nearby:
 {heard}
 
-For the official live-data feed (LDI), also add *HA eBike Bridge* in the \
-Flow app (bike → ⚙ → Components → Add new device) while Start pairing is on.
+For the official live-data feed (LDI), also press **Start pairing** and add *HA eBike Bridge* in the Flow app (bike → ⚙ → Components → Add new device).
 """
 
 

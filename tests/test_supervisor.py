@@ -14,6 +14,8 @@ class FakeSupervisor:
     def __init__(self):
         self.requests = []
         self.mqtt = {"result": "error", "message": "Service not enabled"}
+        self.notify_status = 200          # e.g. 401 when HA's API is not allowed
+        self.device_id = "dev123"         # answer to the bridge-device template
         fake = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -25,12 +27,24 @@ class FakeSupervisor:
 
             def do_GET(self):
                 fake.requests.append(("GET", self.path, self.headers["Authorization"], None))
+                if self.path == "/core/api/":
+                    self._reply(fake.notify_status, {"message": "API running."})
+                    return
                 ok = fake.mqtt.get("result") == "ok"
                 self._reply(200 if ok else 400, fake.mqtt)
 
             def do_POST(self):
                 body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
                 fake.requests.append(("POST", self.path, self.headers["Authorization"], body))
+                if self.path == "/core/api/template":
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/plain")
+                    self.end_headers()
+                    self.wfile.write(fake.device_id.encode())
+                    return
+                if fake.notify_status != 200:
+                    self._reply(fake.notify_status, {"message": "Unauthorized"})
+                    return
                 self._reply(200, [])
 
             def log_message(self, *args):
@@ -88,3 +102,15 @@ def test_messages_render():
     assert "Service not enabled" in supervisor.MQTT_MISSING.format(reason="Service not enabled")
     text = supervisor.BIKE_FOUND.format(name="eBike 2345", address="A4:0D:BC:01:23:45")
     assert '- address: "A4:0D:BC:01:23:45"' in text
+
+
+def test_a_refused_notification_is_reported_not_counted_as_shown(fake, caplog):
+    fake.notify_status = 401
+    assert supervisor.notify("setup", "Bosch eBike: add your bike", "Body") is False
+    assert "HTTP 401" in caplog.text and "Unauthorized" in caplog.text
+    assert "NOT reachable" in supervisor.check_core_api()
+
+
+def test_core_api_check_and_template(fake):
+    assert supervisor.check_core_api().startswith("Home Assistant API reachable")
+    assert supervisor.render_template(supervisor.BRIDGE_DEVICE_TEMPLATE) == "dev123"

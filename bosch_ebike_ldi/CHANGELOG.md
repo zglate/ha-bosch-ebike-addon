@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.2
+
+- **Fixed: notifications never appeared, silently.** A refused notification
+  was counted as shown. Now each one is logged as shown, or with Home
+  Assistant's error, and the log says at start whether Home Assistant's API
+  is reachable.
+- The setup notification links **straight to the Bosch eBike Bridge device**.
+- **Pair selected bike waits for the bike.** A Bosch bike may advertise only
+  briefly; if it hasn't been heard in the last few seconds the app waits up
+  to 3 minutes (scanning) and pairs the moment it's heard, instead of trying
+  to pair a bike that isn't listening. Setup Status says it's waiting.
+- No scanning while pairing (the Pi's single radio jammed: scans got no
+  reply).
+- Pairing-mode instructions are Bosch's own (System Controller manual): bike
+  on, hold the on/off button for more than 3 s, let go when the top bar of
+  the charge indicator flashes blue.
+
 ## 0.4.1
 
 - **Fixed: the bike wasn't found.** A real Range VLT CX advertises only its
