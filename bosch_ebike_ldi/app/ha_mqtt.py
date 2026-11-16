@@ -123,16 +123,14 @@ class HaMqttPublisher:
         version: str | None = None,
     ) -> None:
         self._base = base_topic.rstrip("/")
-        # ADD-ON: add-on version shown on the bridge device in HA.
+        # Add-on version shown on the bridge device in HA.
         self._bridge_device = dict(BRIDGE_DEVICE)
         if version:
             self._bridge_device["sw_version"] = version
-        # ADD-ON: "Forget paired bikes" button.
-        self._forget_cmd_topic = f"{self._base}/bridge/forget/set"
-        self._forget_cb = None
-        # "Run MCSP read sweep" button.
-        self._sweep_cmd_topic = f"{self._base}/bridge/sweep/set"
-        self._sweep_cb = None
+        # Bridge controls (buttons and dropdowns), by command topic.
+        self._controls: dict[str, dict] = {}
+        # Per-bike device details (model, serial, firmware) once the bike says.
+        self._device_info: dict[str, dict] = {}
         self._discovered: set[str] = set()
         # Topic the broker watches for the bridge's own online/offline state.
         self._bridge_avail_topic = f"{self._base}/bridge/availability"
@@ -181,14 +179,11 @@ class HaMqttPublisher:
             self._client.publish(
                 self._bridge_avail_topic, "online", qos=1, retain=True
             )
-            # Re-subscribe to the button command topics after (re)connect.
+            # Re-subscribe to the command topics after (re)connect.
             self._client.subscribe(self._pairing_cmd_topic)
-            self._client.subscribe(self._forget_cmd_topic)
-            self._client.subscribe(self._sweep_cmd_topic)
-            if self._forget_cb is not None:
-                self.publish_forget_discovery(self._forget_cb)
-            if self._sweep_cb is not None:
-                self.publish_sweep_discovery(self._sweep_cb)
+            for topic in list(self._controls):      # run() may still be adding
+                self._client.subscribe(topic)
+                self._publish_control(topic)
             # Re-publish pairing discovery + state if a callback was registered
             # (connect_async may complete after publish_pairing_discovery ran).
             if self._pairing_cb is not None:
@@ -204,19 +199,142 @@ class HaMqttPublisher:
             log.warning("MQTT disconnected unexpectedly (rc=%d), will retry", rc)
 
     def _on_message(self, client, userdata, msg) -> None:
-        buttons = {
-            self._pairing_cmd_topic: ("Pairing", self._pairing_cb),
-            self._forget_cmd_topic: ("Forget bikes", self._forget_cb),
-            self._sweep_cmd_topic: ("Read sweep", self._sweep_cb),
-        }
-        label, callback = buttons.get(msg.topic, (None, None))
+        if msg.topic == self._pairing_cmd_topic:
+            label, callback, args = "Pairing", self._pairing_cb, ()
+        elif msg.topic in self._controls:
+            control = self._controls[msg.topic]
+            label, callback = control["name"], control["callback"]
+            args = (msg.payload.decode(errors="replace"),) if control["kind"] == "select" else ()
+        else:
+            return
         if callback is None:
             return
-        log.info("%s button pressed via HA", label)
+        log.info("%s pressed via HA %s", label, args[0] if args else "")
         try:
-            callback()
+            callback(*args)
         except Exception as exc:
             log.error("%s callback failed: %s", label, exc)
+
+    # ── Bridge controls: buttons and dropdowns ───────────────────────────────
+
+    def add_button(self, key: str, name: str, icon: str, callback,
+                   category: str | None = None) -> None:
+        """A button on the bridge device; `callback()` runs when pressed."""
+        topic = f"{self._base}/bridge/{key}/set"
+        self._controls[topic] = {"kind": "button", "key": key, "name": name, "icon": icon,
+                                 "callback": callback, "category": category}
+        self._client.subscribe(topic)
+        self._publish_control(topic)
+
+    def add_select(self, key: str, name: str, icon: str, options: list[str],
+                   callback) -> None:
+        """A dropdown on the bridge device; `callback(option)` on a choice."""
+        topic = f"{self._base}/bridge/{key}/set"
+        self._controls[topic] = {"kind": "select", "key": key, "name": name, "icon": icon,
+                                 "callback": callback, "category": None,
+                                 "options": list(options), "selected": options[0]}
+        self._client.subscribe(topic)
+        self._publish_control(topic)
+
+    def set_select(self, key: str, options: list[str], selected: str) -> None:
+        """New options and/or selection for a dropdown."""
+        topic = f"{self._base}/bridge/{key}/set"
+        control = self._controls[topic]
+        changed = control["options"] != options
+        control["options"], control["selected"] = list(options), selected
+        if changed:
+            self._publish_control(topic)
+        else:
+            self._client.publish(f"{self._base}/bridge/{key}/state", selected, retain=True)
+
+    def _publish_control(self, topic: str) -> None:
+        c = self._controls[topic]
+        unique_id = f"bosch_ebike_bridge_{c['key']}"
+        config = {"name": c["name"], "unique_id": unique_id, "command_topic": topic,
+                  "icon": c["icon"], "availability_topic": self._bridge_avail_topic,
+                  "device": self._bridge_device}
+        if c["category"]:
+            config["entity_category"] = c["category"]
+        if c["kind"] == "button":
+            config["payload_press"] = "PRESS"
+        else:
+            config["options"] = c["options"]
+            config["state_topic"] = f"{self._base}/bridge/{c['key']}/state"
+        self._client.publish(f"homeassistant/{c['kind']}/{unique_id}/config",
+                             json.dumps(config), retain=True)
+        if c["kind"] == "select":
+            self._client.publish(config["state_topic"], c["selected"], retain=True)
+
+    # ── Status sensors ───────────────────────────────────────────────────────
+
+    def publish_setup_status(self, state: str, attributes: dict) -> None:
+        """Bridge "Setup Status": where setup stands and what to do next."""
+        topic = f"{self._base}/bridge/setup"
+        if "setup" not in self._discovered:
+            self._discovered.add("setup")
+            self._client.publish(
+                "homeassistant/sensor/bosch_ebike_bridge_setup/config", json.dumps({
+                    "name": "Setup Status", "unique_id": "bosch_ebike_bridge_setup",
+                    "state_topic": topic, "value_template": "{{ value_json.state }}",
+                    "json_attributes_topic": topic,
+                    "json_attributes_template": "{{ value_json.attributes | tojson }}",
+                    "icon": "mdi:bike-fast", "device": self._bridge_device}), retain=True)
+        self._client.publish(topic, json.dumps({"state": state, "attributes": attributes},
+                                               default=str), retain=True)
+
+    def set_device_info(self, bike_id: str, bike_name: str, info: dict) -> None:
+        """Model, serial number and firmware for a bike's HA device."""
+        if self._device_info.get(bike_id) == info:
+            return
+        self._device_info[bike_id] = dict(info)
+        # Re-publishing one entity's discovery updates the device registry.
+        self._discovered.discard(f"status:{bike_id}")
+
+    def publish_bike_status(self, bike_id: str, bike_name: str, state: str,
+                            attributes: dict) -> None:
+        """A bike's "Status": connected how, exploring, released until when."""
+        slug = _slug(bike_id)
+        topic = f"{self._base}/{slug}/status"
+        key = f"status:{bike_id}"
+        if key not in self._discovered:
+            self._discovered.add(key)
+            unique_id = f"bosch_ebike_{slug}_status"
+            self._client.publish(f"homeassistant/sensor/{unique_id}/config", json.dumps({
+                "name": "Status", "unique_id": unique_id, "state_topic": topic,
+                "value_template": "{{ value_json.state }}", "json_attributes_topic": topic,
+                "json_attributes_template": "{{ value_json.attributes | tojson }}",
+                "icon": "mdi:bicycle-electric",
+                "device": self._bike_device(slug, bike_name, bike_id)}), retain=True)
+        self._client.publish(topic, json.dumps({"state": state, "attributes": attributes},
+                                               default=str), retain=True)
+
+    def publish_firmware(self, bike_id: str, bike_name: str, key: str, title: str,
+                         payload: dict, available: bool) -> None:
+        """An update entity for one component. No install command: metadata only.
+
+        Unavailable while no published version matches: Home Assistant keeps
+        the last latest_version otherwise, which could claim "up to date".
+        """
+        slug = _slug(bike_id)
+        topic = f"{self._base}/{slug}/firmware/{key}"
+        if f"fw:{bike_id}:{key}" not in self._discovered:
+            self._discovered.add(f"fw:{bike_id}:{key}")
+            unique_id = f"bosch_ebike_{slug}_firmware_{key}"
+            self._client.publish(f"homeassistant/update/{unique_id}/config", json.dumps({
+                "name": f"{title} firmware", "unique_id": unique_id, "state_topic": topic,
+                "availability_topic": f"{topic}/available",
+                "device_class": "firmware",
+                "device": self._bike_device(slug, bike_name, bike_id)}), retain=True)
+        self._client.publish(topic, json.dumps(payload), retain=True)
+        self._client.publish(f"{topic}/available", "online" if available else "offline",
+                             retain=True)
+
+    def remove_firmware(self, bike_id: str, key: str) -> None:
+        """Remove a component's update entity (firmware check switched off)."""
+        slug = _slug(bike_id)
+        self._discovered.discard(f"fw:{bike_id}:{key}")
+        self._client.publish(
+            f"homeassistant/update/bosch_ebike_{slug}_firmware_{key}/config", "", retain=True)
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -290,26 +408,10 @@ class HaMqttPublisher:
         log.info("Published HA discovery for pairing button + status")
 
     def publish_forget_discovery(self, callback) -> None:
-        """ADD-ON: HA button that removes the bonds of all known bikes.
-
-        For when a bike won't reconnect (stale bond). Afterwards the pairing
-        window opens and the bike must be added again in the Flow app.
-        """
-        self._forget_cb = callback
-        self._client.publish(
-            "homeassistant/button/bosch_ebike_bridge_forget/config",
-            json.dumps({
-                "name": "Forget paired bikes",
-                "unique_id": "bosch_ebike_bridge_forget",
-                "command_topic": self._forget_cmd_topic,
-                "payload_press": "PRESS",
-                "icon": "mdi:bluetooth-off",
-                "entity_category": "config",
-                "availability_topic": self._bridge_avail_topic,
-                "device": self._bridge_device,
-            }),
-            retain=True,
-        )
+        """Button that removes the bonds of all known bikes (stale bond fix).
+        Afterwards the pairing window opens and the bike is added again."""
+        self.add_button("forget", "Forget paired bikes", "mdi:bluetooth-off", callback,
+                        category="config")
 
     def publish_pairing_active(self, active: bool) -> None:
         """Publish the current pairing-window state (retained)."""
@@ -330,13 +432,7 @@ class HaMqttPublisher:
         slug = _slug(bike_id)
         state_topic = f"{self._base}/{slug}/state"
         avail_topic = f"{self._base}/{slug}/availability"
-        device = {
-            "identifiers": [f"bosch_ebike_{slug}"],
-            "name": bike_name,
-            "manufacturer": "Bosch",
-            "model": "eBike (LDI)",
-            "via_device": "bosch_ebike_pi_bridge",
-        }
+        device = self._bike_device(slug, bike_name, bike_id)
 
         for s in SENSOR_DEFS:
             unique_id = f"bosch_ebike_{slug}_{s.key}"
@@ -420,10 +516,14 @@ class HaMqttPublisher:
 
     # ── MCSP (Flow-app channel) entities ─────────────────────────────────────
 
-    def _bike_device(self, slug: str, bike_name: str) -> dict:
-        return {"identifiers": [f"bosch_ebike_{slug}"], "name": bike_name,
-                "manufacturer": "Bosch", "model": "eBike (smart system)",
-                "via_device": "bosch_ebike_pi_bridge"}
+    def _bike_device(self, slug: str, bike_name: str, bike_id: str) -> dict:
+        """The bike's HA device: model, serial and firmware once the bike says."""
+        # No placeholder model: every retained discovery config updates the
+        # device, and a generic one could overwrite the model the bike reported.
+        device = {"identifiers": [f"bosch_ebike_{slug}"], "name": bike_name,
+                  "manufacturer": "Bosch", "via_device": "bosch_ebike_pi_bridge"}
+        device.update(self._device_info.get(bike_id, {}))
+        return device
 
     def publish_mcsp_discovery(self, bike_id: str, bike_name: str) -> None:
         """Curated MCSP sensors (motor power, battery health ...). Once per bike.
@@ -443,7 +543,7 @@ class HaMqttPublisher:
                 "name": e.name, "unique_id": unique_id, "state_topic": state_topic,
                 "value_template": ("{% set v = value_json.get('" + e.key + "') %}"
                                    "{{ v if v is not none else '' }}"),
-                "device": self._bike_device(slug, bike_name),
+                "device": self._bike_device(slug, bike_name, bike_id),
             }
             for field, value in (("unit_of_measurement", e.unit),
                                  ("device_class", e.device_class),
@@ -472,14 +572,14 @@ class HaMqttPublisher:
                 "value_template": "{{ value_json.state[:255] }}",
                 "json_attributes_topic": topic, "entity_category": "diagnostic",
                 "icon": "mdi:bluetooth-settings",
-                "device": self._bike_device(slug, bike_name),
+                "device": self._bike_device(slug, bike_name, bike_id),
             }), retain=True)
             unique_id = f"bosch_ebike_{slug}_mcsp_values"
             self._client.publish(f"homeassistant/sensor/{unique_id}/config", json.dumps({
                 "name": "MCSP Datapoints with Values", "unique_id": unique_id,
                 "state_topic": topic, "value_template": "{{ value_json.get('values', 0) }}",
                 "entity_category": "diagnostic", "state_class": "measurement",
-                "icon": "mdi:counter", "device": self._bike_device(slug, bike_name),
+                "icon": "mdi:counter", "device": self._bike_device(slug, bike_name, bike_id),
             }), retain=True)
         self._client.publish(topic, json.dumps(status, default=str), retain=True)
 
@@ -499,7 +599,7 @@ class HaMqttPublisher:
                 "name": f"{label} (0x{dp_id:04X})", "unique_id": unique_id,
                 "state_topic": topic, "entity_category": "diagnostic",
                 "enabled_by_default": False,
-                "device": self._bike_device(slug, bike_name),
+                "device": self._bike_device(slug, bike_name, bike_id),
             }
             if structured:
                 payload["value_template"] = "{{ value[:255] }}"
@@ -515,16 +615,8 @@ class HaMqttPublisher:
 
     def publish_sweep_discovery(self, callback) -> None:
         """Button: read every readable datapoint on every connected bike."""
-        self._sweep_cb = callback
-        self._client.publish(
-            "homeassistant/button/bosch_ebike_bridge_sweep/config",
-            json.dumps({
-                "name": "Run MCSP read sweep", "unique_id": "bosch_ebike_bridge_sweep",
-                "command_topic": self._sweep_cmd_topic, "payload_press": "PRESS",
-                "icon": "mdi:magnify-scan", "entity_category": "diagnostic",
-                "availability_topic": self._bridge_avail_topic,
-                "device": self._bridge_device,
-            }), retain=True)
+        self.add_button("sweep", "Run MCSP read sweep", "mdi:magnify-scan", callback,
+                        category="diagnostic")
 
     def publish_availability(self, bike_id: str, online: bool) -> None:
         """Publish online/offline availability for one bike (retained)."""

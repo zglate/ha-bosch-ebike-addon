@@ -299,12 +299,26 @@ class Device(BluezObject):
         STATE["connect_calls"].append(self.path)
         GLib.idle_add(lambda: CONTROL.connect(self, resolve=True) or False)
 
-    @dbus.service.method("org.bluez.Device1")
-    def Pair(self):
-        """Like BlueZ: connect if needed, bond, then services resolve."""
+    @dbus.service.method("org.bluez.Device1", async_callbacks=("reply", "error"))
+    def Pair(self, reply, error):
+        """Like BlueZ: connect, services may resolve while SMP runs, then the
+        reply. Like the kernel: a bond is only stored if the adapter is
+        bondable (Pairable) at that moment."""
         STATE["pair_calls"].append(self.path)
-        self.update("org.bluez.Device1", Paired=True, Bonded=True)
-        GLib.idle_add(lambda: CONTROL.connect(self, resolve=True) or False)
+        CONTROL.connect(self, resolve=True)
+
+        def finish():
+            if self.path in STATE["fail_pair"]:
+                # Worst case: the link stays up after SMP fails.
+                error(dbus.DBusException("Authentication Failed",
+                                         name="org.bluez.Error.AuthenticationFailed"))
+                return False
+            bondable = bool(ADAPTER_OBJ.interfaces["org.bluez.Adapter1"]["Pairable"])
+            STATE["pair_bondable"].append(bondable)
+            self.update("org.bluez.Device1", Paired=True, Bonded=bondable)
+            reply()
+            return False
+        GLib.timeout_add(300, finish)
 
     @dbus.service.method("org.bluez.Device1")
     def Disconnect(self):
@@ -366,6 +380,11 @@ class Control(dbus.service.Object):
         device.update("org.bluez.Device1", Connected=True)
         if resolve:
             device.update("org.bluez.Device1", ServicesResolved=True)
+
+    @dbus.service.method("test.FakeBluez", in_signature="s")
+    def FailPairing(self, address):
+        """Pair() with this bike will fail (after its services resolved)."""
+        STATE["fail_pair"].append(device_path(address))
 
     @dbus.service.method("test.FakeBluez", in_signature="s")
     def AddBondedBike(self, address):
@@ -465,7 +484,7 @@ STATE = {"advertisements": [], "unregistrations": 0, "removed_devices": [],
          "notify_started": [], "property_sets": [], "agent_errors": [],
          "default_agent": None, "agent_capability": None,
          "agent_registrations": 0, "gatt_writes": [], "connect_calls": [],
-         "pair_calls": [], "disconnect_calls": [], "discovery": []}
+         "pair_calls": [], "pair_bondable": [], "fail_pair": [],"disconnect_calls": [], "discovery": []}
 MCSP_LOG = {"commands": [], "messages": []}
 
 if __name__ == "__main__":

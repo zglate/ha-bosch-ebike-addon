@@ -72,9 +72,28 @@ def _convert(dp: Datapoint, value):
 
 # ── What the add-on reads ────────────────────────────────────────────────────
 # Our own priorities (from the implementation handoff).
+# What each component is: product name, part number, product code, serial
+# number, hardware and software version. Used for the HA device, firmware
+# checks and the report. (component, field) by datapoint.
+IDENTITY = {
+    0x182E: ("DriveUnit", "productName"), 0x1802: ("DriveUnit", "partNumber"),
+    0x1803: ("DriveUnit", "productCode"), 0x1801: ("DriveUnit", "serialNumber"),
+    0x1804: ("DriveUnit", "hardwareVersion"), 0x1806: ("DriveUnit", "softwareVersion"),
+    0x009B: ("Battery", "productName"), 0x0082: ("Battery", "partNumber"),
+    0x0083: ("Battery", "productCode"), 0x0081: ("Battery", "serialNumber"),
+    0x0084: ("Battery", "hardwareVersion"), 0x0086: ("Battery", "softwareVersion"),
+    0x206F: ("RemoteControl", "productName"), 0x2062: ("RemoteControl", "partNumber"),
+    0x2065: ("RemoteControl", "productCode"), 0x2061: ("RemoteControl", "serialNumber"),
+    0x2063: ("RemoteControl", "hardwareVersion"), 0x206B: ("RemoteControl", "softwareVersion"),
+    0x0D09: ("HeadUnit", "productName"), 0x0D02: ("HeadUnit", "partNumber"),
+    0x0D03: ("HeadUnit", "productCode"), 0x0D01: ("HeadUnit", "serialNumber"),
+    0x0D04: ("HeadUnit", "hardwareVersion"), 0x0D06: ("HeadUnit", "softwareVersion"),
+}
+
 CURATED_READS = [
     0x208E,                                             # keyExchangePending (startup state)
-    0x1806, 0x0086, 0x206B, 0x0D06, 0x20E2,             # software versions, update status
+    *IDENTITY,                                          # what each component is
+    0x20E2,                                             # update ready for install
     0x1819, 0x186D, 0x189D, 0x18AC, 0x184F,             # hours, motor odometer, statistics
     0x180C, 0x180D, 0x188B,                             # assist mode names and limits
     0x0088, 0x0089, 0x008A, 0x008B, 0x008C, 0x0091, 0x0094, 0x0095, 0x0096,

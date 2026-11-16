@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.4.0 – the whole setup journey
+
+- **Add your bike from Home Assistant, without the Flow app.** Bosch bikes the
+  app hears appear in a **Nearby Bosch eBikes** dropdown (with pairing
+  mode; signal strength in Setup Status and the setup notification). Pick
+  yours and press **Pair selected bike**. Whether a bike accepts this outside
+  pairing mode is not yet tested on a real bike; if it doesn't, put it in
+  pairing mode and press **Start pairing** (or pick it and press Pair selected
+  bike while it's in pairing mode). Paired bikes are remembered and reconnect by themselves;
+  the `bikes` option is now only for names and battery sizes.
+- **One setup notification** that evolves: how to add a bike and which Bosch
+  bikes are heard nearby, dismissed once a bike is added. Replaces the
+  per-bike "found nearby" notices.
+- **Setup Status** sensor on the bridge device: where setup stands.
+- **Status** sensor per bike: connected over LDI and/or MCSP, exploring
+  (with sweep progress), released for the Flow app until when.
+- **Bike device info** from the bike itself: model, serial number, drive unit
+  software and hardware version.
+- **Firmware update entities** per component (drive unit, battery,
+  controller, display): the version your bike reports against the latest one
+  Bosch publishes, with release notes, checked daily. One notification per
+  new version, dismissed once installed. A component Bosch's list doesn't
+  name shows *unavailable*, never "up to date". Information only, never
+  installs. Options `firmware_check` and `firmware_page`.
+- Scanning for bikes no longer depends on `mcsp_connect`.
+- Scans are visible in the log: each scan's start, errors, and which Bosch
+  bikes were heard (or "no Bosch eBike heard").
+- Every option now has a name and description in the Configuration tab.
+- The "bike connected" and "pairing failed" notifications match the new flow.
+
 ## 0.3.2
 
 - **Home Assistant finds the bike itself.** The app now scans for Bosch bikes

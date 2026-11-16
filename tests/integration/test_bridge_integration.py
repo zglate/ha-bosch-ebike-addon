@@ -161,6 +161,11 @@ class Harness:
         wait_for(lambda: self.mqtt.get("bosch_ebike/bridge/availability") == "online",
                  "bridge online on MQTT")
 
+    def stop_bridge(self):
+        """Stop the add-on like a restart would (its state dir is kept)."""
+        self.bridge.terminate()
+        self.bridge.wait(timeout=10)
+
     def state(self):
         return json.loads(self.control.State())
 

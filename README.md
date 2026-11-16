@@ -2,18 +2,22 @@
 
 > [!WARNING]
 > **Very early version – don't use it yet.** This is an exploration build
-> (v0.3) for testing on one bike. It hasn't been run against a real bike
+> (v0.4) for testing on one bike. It hasn't been run against a real bike
 > yet, it talks to the bike over an undocumented channel, and things may
 > change completely between versions. Install it only if you're helping test
 > and are comfortable reading logs.
 
 A Home Assistant add-on for Bosch smart system eBikes. It runs on the
-HA host's Bluetooth (no ESP32) and gets data two ways:
+HA host's Bluetooth (no ESP32), finds the bike by itself (pick it in a
+dropdown, press a button) and gets data two ways:
 
 - the official **Live Data Interface (LDI)**: battery %, speed, cadence,
   rider power, odometer, flags;
-- **MCSP**, the Flow app's own channel: version 0.3 explores it read-only
+- **MCSP**, the Flow app's own channel: version 0.4 explores it read-only
   and captures everything, to learn what each bike and firmware exposes.
+
+It also shows each component's firmware against Bosch's published versions
+(information only, never installs).
 
 User documentation: [bosch_ebike_ldi/DOCS.md](bosch_ebike_ldi/DOCS.md).
 Where details came from (and what to send back): [SOURCES.md](SOURCES.md).
@@ -36,7 +40,12 @@ bosch_ebike_ldi/              the add-on
   app/livedata.py             LDI decoder, charge-time and energy estimates
   app/ha_mqtt.py              Home Assistant MQTT discovery and state
   app/ble_policy.py           shared-adapter rules, advert parsing (pure)
+  app/nearby.py               Bosch bikes heard nearby, dropdown options (pure)
+  app/status.py               Setup Status / bike Status text, setup notice (pure)
+  app/firmware.py             Bosch's published versions: parse, match, compare
+  app/supervisor.py           Supervisor: MQTT lookup, HA notifications
   app/options.py              add-on options -> config (pure)
+DESIGN.md                     the 0.4 user journey, entities, notifications
 scripts/test.sh               build the image and run every test inside it
 scripts/build_datapoints.py   regenerate app/datapoints.json from the handoff
 tests/                        unit tests (any OS)
@@ -60,6 +69,9 @@ The integration tests run the real `bridge.py` against `fake_bluez.py`, a
 fake BlueZ with a fake Bosch bike that speaks MCSP, written independently of
 `mcsp.py`. The tests cover:
 
+- the whole journey: no bike, bike heard nearby, picked and paired,
+  status and device info, firmware update entity, notify once across
+  restarts;
 - LDI pairing and data;
 - the read-only guarantee: every byte sent is checked, there are no requests
   to command datapoints, and the sweep covers exactly the readable table;

@@ -29,9 +29,12 @@ DEFAULTS = {
     "capture": True,       # debug capture + report in /share/bosch_ebike
     "open_pairing_on_start": False,   # pairing only via the "Start pairing" button
     "mcsp_reconnect_hours": 6,        # after releasing the bike, wait this long
+    # Firmware notifications: compare with Bosch's published versions daily.
+    "firmware_check": True,
+    "firmware_page": "https://www.bosch-ebike.com/ca/service/software-update",
 }
 EXPLORER_OPTIONS = ("mcsp", "mcsp_connect", "mcsp_sweep", "gatt_listen",
-                    "raw_entities", "capture", "open_pairing_on_start")
+                    "raw_entities", "capture", "open_pairing_on_start", "firmware_check")
 
 
 class ConfigError(ValueError):
@@ -91,6 +94,7 @@ def build_config(options: Mapping, env: Mapping) -> dict:
         "mqtt": mqtt,
         **{name: bool(opts[name]) for name in EXPLORER_OPTIONS},
         "mcsp_reconnect_hours": max(0.0, float(opts["mcsp_reconnect_hours"])),
+        "firmware_page": str(opts["firmware_page"]),
     }
 
 

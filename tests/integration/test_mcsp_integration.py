@@ -32,6 +32,8 @@ VALUES = {
     "0x180d": "0a034f4646" + "0a0345434f" + "0a05544f55522b",   # OFF, ECO, TOUR+
     "0x1809": "0802",                             # assist mode index 2
     "0x1819": "082a",                             # 42 power-on hours
+    "0x182e": "0a13" + b"Performance Line CX".hex(),     # drive unit product name
+    "0x1801": "0a06" + b"SN1234".hex(),           # drive unit serial number
 }
 
 
@@ -294,6 +296,19 @@ def test_scans_by_itself_while_no_bike_is_connected(harness):
     log = wait_for(lambda: (d := harness.state()["discovery"]) and ["stop"] in d and d,
                    "a short scan", timeout=10)
     assert ["filter", {"Transport": "le"}] in log and ["start"] in log
+    # The result is visible in the add-on log, not only in the capture.
+    wait_for(lambda: "Scan done: no Bosch eBike heard" in harness.bridge_log.read_text(),
+             "scan summary in the log")
+
+
+def test_scan_summary_names_the_bike_it_heard(harness):
+    harness.start_bridge(open_pairing_on_start=False,
+                         env={"BOSCH_SCAN_FOR_SEC": "3"})
+    wait_for(lambda: "Scanning for Bosch eBikes" in harness.bridge_log.read_text(), "scan")
+    harness.control.Advertise(NEW_BIKE, NOT_READY, False)
+    wait_for(lambda: f"heard {NEW_BIKE}" in harness.bridge_log.read_text()
+             and "not in pairing mode" in harness.bridge_log.read_text(),
+             "bike named in the scan summary", timeout=10)
 
 
 def test_start_pairing_pairs_a_bike_that_is_ready_and_explores_it(harness):
@@ -313,11 +328,197 @@ def test_a_bike_not_in_pairing_mode_is_only_announced(harness):
     try:
         harness.start_bridge(env={"SUPERVISOR_URL": sup.url, "SUPERVISOR_TOKEN": "tok"})
         harness.control.Advertise(NEW_BIKE, NOT_READY, False)
+        # It shows up in the (single, evolving) setup notification.
         note = wait_for(lambda: [b for m, p, _, b in sup.requests
-                                 if m == "POST" and b.get("notification_id")
-                                 == "bosch_ebike_nearby_d00000000007"], "nearby notice")[0]
-        assert NEW_BIKE in note["message"] and "pairing mode" in note["message"]
+                                 if m == "POST" and b.get("notification_id") == "bosch_ebike_setup"
+                                 and NEW_BIKE in b.get("message", "")], "setup notice")[-1]
+        assert "not in pairing mode" in note["message"]
         time.sleep(1)
         assert harness.state()["pair_calls"] == [] and harness.state()["connect_calls"] == []
+    finally:
+        sup.server.shutdown()
+
+
+# ── The whole journey: no bike → nearby → pick → paired → status → firmware ──
+
+import threading  # noqa: E402
+from http.server import BaseHTTPRequestHandler, HTTPServer  # noqa: E402
+
+FIRMWARE_PAGE = """<html><body><h2>Current software versions</h2>
+<p>Performance Line CX smart system: 21.12.0<br>Batteries smart system: 21.12.0</p>
+<p>System Controller: 21.11.0<br>Kiox 400C: 21.11.0</p></body></html>"""
+
+
+class PageServer:
+    """Serves a firmware version page like Bosch's (synthetic content)."""
+
+    def __init__(self, body):
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html")
+                self.end_headers()
+                self.wfile.write(body.encode())
+
+            def log_message(self, *args):
+                pass
+        self.server = HTTPServer(("127.0.0.1", 0), Handler)
+        self.url = f"http://127.0.0.1:{self.server.server_port}/ca/service/software-update"
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+
+def notes(sup, notification_id):
+    """Notifications shown (created) with this ID; dismissals don't count."""
+    return [b for m, p, _, b in sup.requests
+            if m == "POST" and p.endswith("/create")
+            and b.get("notification_id") == notification_id]
+
+
+def test_the_whole_journey_from_no_bike_to_firmware(harness):
+    sup, page = FakeSupervisor(), PageServer(FIRMWARE_PAGE)
+    try:
+        harness.start_bridge(
+            open_pairing_on_start=False, firmware_page=page.url,
+            env={"SUPERVISOR_URL": sup.url, "SUPERVISOR_TOKEN": "tok",
+                 "BOSCH_FIRMWARE_FIRST_SEC": "1"})
+        # 1. No bike yet: Setup Status and the setup notification say what to do.
+        setup = wait_for(lambda: harness.mqtt.json("bosch_ebike/bridge/setup"), "setup status")
+        assert setup["state"].startswith("No bike added yet")
+        assert "Pair selected bike" in wait_for(lambda: notes(sup, "bosch_ebike_setup"),
+                                                "setup notice")[0]["message"]
+
+        # 2. The bike is switched on: it appears in the Nearby dropdown.
+        harness.control.EnableMcsp(NEW_BIKE, json.dumps({"values": {
+            **VALUES, "0x1806": "0a07" + b"21.11.0".hex(),
+            # A controller Bosch's list doesn't name: must not look "up to date".
+            "0x206f": "0a0b" + b"Mini Remote".hex(), "0x206b": "0a06" + b"1.3.24".hex()}}))
+        harness.control.Advertise(NEW_BIKE, NOT_READY, False)
+        config = wait_for(lambda: (c := harness.mqtt.json(
+            "homeassistant/select/bosch_ebike_bridge_nearby/config"))
+            and len(c["options"]) > 1 and c, "bike in the dropdown")
+        option = next(o for o in config["options"] if o.startswith(NEW_BIKE))
+
+        # 3. Pick it and press Pair selected bike (the pick is the consent).
+        harness.mqtt.client.publish("bosch_ebike/bridge/nearby/set", option)
+        wait_for(lambda: harness.mqtt.get("bosch_ebike/bridge/nearby/state") == option,
+                 "selection reflected")
+        harness.mqtt.client.publish("bosch_ebike/bridge/pair_selected/set", "PRESS")
+        wait_for(lambda: harness.state()["pair_bondable"], "Pair() finished")
+        # Outside the window the adapter is made bondable just for this Pair()
+        # (else the kernel stores no bond), then put back.
+        assert harness.state()["pair_bondable"] == [True]
+        wait_for(lambda: [p for p in harness.state()["property_sets"]
+                          if p[0] == "Pairable"][-1] == ["Pairable", False], "Pairable restored")
+
+        # 4. Paired: setup notification dismissed, bike Status and device info.
+        wait_for(lambda: [b for m, p, _, b in sup.requests if p.endswith("/dismiss")
+                          and b["notification_id"] == "bosch_ebike_setup"], "setup dismissed")
+        status_topic = f"bosch_ebike/{NEW_SLUG}/status"
+        wait_for(lambda: (harness.mqtt.json(status_topic) or {}).get("state", "")
+                 .startswith(("Exploring", "Connected")), "bike status")
+        device = wait_for(lambda: (c := harness.mqtt.json(
+            f"homeassistant/sensor/bosch_ebike_{NEW_SLUG}_status/config"))
+            and {"model", "serial_number", "sw_version"} <= c["device"].keys()
+            and c["device"], "device info")
+        assert (device["model"], device["serial_number"], device["sw_version"]) == (
+            "Performance Line CX", "SN1234", "21.11.0")
+
+        # 5. Firmware: update entity shows installed vs published, one notification.
+        fw = wait_for(lambda: (p := harness.mqtt.json(
+            f"bosch_ebike/{NEW_SLUG}/firmware/drive_unit")) and p.get("latest_version") and p,
+            "firmware update entity", timeout=20)
+        assert (fw["installed_version"], fw["latest_version"]) == ("21.11.0", "21.12.0")
+        config = harness.mqtt.json(
+            f"homeassistant/update/bosch_ebike_{NEW_SLUG}_firmware_drive_unit/config")
+        assert "command_topic" not in config                  # never installs
+        assert harness.mqtt.get(f"bosch_ebike/{NEW_SLUG}/firmware/drive_unit/available") \
+            == "online"
+        # Unmatched component: no latest_version (HA rejects null) and unavailable.
+        ctl = wait_for(lambda: harness.mqtt.json(f"bosch_ebike/{NEW_SLUG}/firmware/controller"),
+                       "controller entity")
+        assert ctl["installed_version"] == "1.3.24" and "latest_version" not in ctl
+        assert harness.mqtt.get(f"bosch_ebike/{NEW_SLUG}/firmware/controller/available") \
+            == "offline"
+        fw_note = f"bosch_ebike_firmware_{NEW_SLUG.replace('_', '')}_drive_unit"
+        assert len(notes(sup, fw_note)) == 1
+
+        # 6. After a restart the same release is evaluated again but not re-announced.
+        fw_topic = f"bosch_ebike/{NEW_SLUG}/firmware/drive_unit"
+        published = harness.mqtt.count(fw_topic)
+        harness.stop_bridge()
+        harness.start_bridge(open_pairing_on_start=False, firmware_page=page.url,
+                             env={"SUPERVISOR_URL": sup.url, "SUPERVISOR_TOKEN": "tok",
+                                  "BOSCH_FIRMWARE_FIRST_SEC": "1"})
+        wait_for(lambda: sum(e["kind"] == "firmware_versions"
+                             for e in harness.capture_events()) >= 2, "second check", timeout=20)
+        wait_for(lambda: harness.mqtt.count(fw_topic) > published + 1, "re-evaluated", timeout=20)
+        time.sleep(1)
+        assert len(notes(sup, fw_note)) == 1
+    finally:
+        sup.server.shutdown()
+        page.server.shutdown()
+
+
+def test_pair_selected_without_a_selection_does_nothing(harness):
+    harness.start_bridge(open_pairing_on_start=False)
+    harness.mqtt.client.publish("bosch_ebike/bridge/pair_selected/set", "PRESS")
+    wait_for(lambda: any(e["kind"] == "pair_selected_none" for e in harness.capture_events()),
+             "ignored")
+    assert harness.state()["pair_calls"] == []
+
+
+def test_a_leftover_setup_notice_is_cleared_once_a_bike_is_known(harness):
+    sup = FakeSupervisor()
+    try:
+        harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": BIKE}],
+                             env={"SUPERVISOR_URL": sup.url, "SUPERVISOR_TOKEN": "tok"})
+        wait_for(lambda: [b for m, p, _, b in sup.requests if p.endswith("/dismiss")
+                          and b["notification_id"] == "bosch_ebike_setup"], "setup dismissed")
+        assert notes(sup, "bosch_ebike_setup") == []
+    finally:
+        sup.server.shutdown()
+
+
+def test_firmware_check_off_removes_update_entities(harness):
+    harness.start_bridge(open_pairing_on_start=False, firmware_check=False)
+    harness.control.EnableMcsp(NEW_BIKE, json.dumps(
+        {"values": {**VALUES, "0x1806": "0a07" + b"21.11.0".hex()}}))
+    harness.control.Advertise(NEW_BIKE, NOT_READY, False)
+    option = wait_for(lambda: next((o for o in (harness.mqtt.json(
+        "homeassistant/select/bosch_ebike_bridge_nearby/config") or {}).get("options", [])
+        if o.startswith(NEW_BIKE)), None), "bike in the dropdown")
+    harness.mqtt.client.publish("bosch_ebike/bridge/nearby/set", option)
+    wait_for(lambda: harness.mqtt.get("bosch_ebike/bridge/nearby/state") == option, "picked")
+    harness.mqtt.client.publish("bosch_ebike/bridge/pair_selected/set", "PRESS")
+    topic = f"homeassistant/update/bosch_ebike_{NEW_SLUG}_firmware_drive_unit/config"
+    wait_for(lambda: harness.mqtt.count(topic) >= 1, "update entity removed")
+    assert harness.mqtt.get(topic) == ""
+    assert harness.mqtt.get(f"bosch_ebike/{NEW_SLUG}/firmware/drive_unit") is None
+
+
+def test_a_failed_pairing_never_makes_the_bike_ours(harness):
+    sup = FakeSupervisor()
+    try:
+        harness.start_bridge(open_pairing_on_start=False,
+                             env={"SUPERVISOR_URL": sup.url, "SUPERVISOR_TOKEN": "tok"})
+        harness.control.EnableMcsp(NEW_BIKE, json.dumps({"values": VALUES}))
+        harness.control.FailPairing(NEW_BIKE)
+        harness.control.Advertise(NEW_BIKE, NOT_READY, False)
+        option = wait_for(lambda: next((o for o in (harness.mqtt.json(
+            "homeassistant/select/bosch_ebike_bridge_nearby/config") or {}).get("options", [])
+            if o.startswith(NEW_BIKE)), None), "bike in the dropdown")
+        harness.mqtt.client.publish("bosch_ebike/bridge/nearby/set", option)
+        wait_for(lambda: harness.mqtt.get("bosch_ebike/bridge/nearby/state") == option, "picked")
+        harness.mqtt.client.publish("bosch_ebike/bridge/pair_selected/set", "PRESS")
+        wait_for(lambda: notes(sup, f"bosch_ebike_pair_{NEW_SLUG.replace('_', '')}"),
+                 "pairing failed notice")
+        time.sleep(1)
+        events = harness.capture_events()
+        assert not [e for e in events if e["kind"] == "bike_connected"]
+        assert not [e for e in events if e["kind"] == "paired"]
+        assert NEW_BIKE not in harness.mqtt.json("bosch_ebike/bridge/setup")["attributes"]["bikes"]
+        assert harness.mqtt.get(f"bosch_ebike/{NEW_SLUG}/status") is None
+        # The link Pair() opened is closed again.
+        assert any(p.endswith("dev_D0_00_00_00_00_07") for p in harness.state()["disconnect_calls"])
     finally:
         sup.server.shutdown()

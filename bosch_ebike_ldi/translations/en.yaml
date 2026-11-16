@@ -9,8 +9,8 @@ configuration:
     name: Private advertising
     description: >-
       Only show the bridge to Flow apps during the 5-minute pairing window
-      (after start-up or after pressing "Start pairing"). Bonded bikes still
-      reconnect at any time.
+      (after pressing "Start pairing"). Paired bikes still reconnect at any
+      time.
   log_level:
     name: Log level
     description: Use debug to log every raw data packet from the bike.
@@ -23,8 +23,45 @@ configuration:
   bikes:
     name: Bikes
     description: >-
-      Optional. Give bikes a name by Bluetooth address. Unlisted bikes are
-      added automatically as "eBike XXXX".
+      Optional. Bikes are added with the "Pair selected bike" or "Start
+      pairing" buttons; list one here (by Bluetooth address) only to give it a
+      name or its own battery_wh.
+  mcsp:
+    name: MCSP exploration
+    description: Read the Flow app's channel (read-only) when the bike exposes it.
+  mcsp_connect:
+    name: Connect to my bike
+    description: >-
+      Open a connection to your bike when it advertises, to reach MCSP. Only
+      bikes you added; released after exploring.
+  mcsp_sweep:
+    name: Datapoint sweep
+    description: Read every readable datapoint once per drive-unit firmware.
+  mcsp_reconnect_hours:
+    name: Hours before reconnecting
+    description: >-
+      After releasing the bike (so the Flow app can connect), wait this long
+      before connecting again.
+  gatt_listen:
+    name: Listen to all characteristics
+    description: Record every other notifying Bluetooth characteristic.
+  raw_entities:
+    name: Per-datapoint entities
+    description: One hidden diagnostic entity per decoded datapoint.
+  capture:
+    name: Debug capture
+    description: Write the debug capture and report to /share/bosch_ebike.
+  open_pairing_on_start:
+    name: Open pairing window on start
+    description: Open the 5-minute pairing window every time the app starts.
+  firmware_check:
+    name: Firmware check
+    description: >-
+      Compare the bike's firmware with Bosch's published versions daily and
+      show update entities. Information only; never installs anything.
+  firmware_page:
+    name: Firmware page
+    description: Bosch's software-update page for your country.
   mqtt_host:
     name: MQTT host
     description: Leave empty to use the Mosquitto broker add-on.

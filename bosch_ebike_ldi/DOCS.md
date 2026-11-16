@@ -7,12 +7,13 @@
 Data and diagnostics from a Bosch smart system eBike, over the Home Assistant
 host's own Bluetooth adapter. No ESP32 or second Pi needed.
 
-Two ways in:
+It finds the bike by itself: switch the bike on, pick it in a dropdown,
+press a button. Two ways it reads data:
 
 - **Live Data Interface (LDI)**: Bosch's official interface. The bike
   connects to this add-on like it would to a Garmin and streams battery %,
   speed, cadence, rider power, odometer and status flags while it's on.
-- **MCSP**: the channel the Bosch Flow app itself uses. Version 0.3 is an
+- **MCSP**: the channel the Bosch Flow app itself uses. Version 0.4 is an
   **exploration release**: it reads, read-only and gently, everything it
   safely can (motor power, assist mode, battery health/temperature/cycles,
   motor hours, software versions ...) and writes a detailed debug capture,
@@ -27,72 +28,71 @@ Two ways in:
 - The **Mosquitto broker** add-on and the **MQTT** integration.
 - A Bluetooth adapter on the host (the Raspberry Pi's built-in one is fine).
 
-## Install (local add-on)
+## Install
 
-1. Copy the `bosch_ebike_ldi` folder into the `local_apps` folder on Home
-   Assistant (called `addons` on older versions), using the **Samba share**
-   or **Terminal & SSH** app. You should end up with
-   `local_apps/bosch_ebike_ldi/config.yaml`.
-2. **Settings → Apps → Install app**, then ⋮ (top right) → **Check for
-   updates** (refresh the page if needed).
-3. Open **Bosch eBike** under **Local apps** and select **Install**. The
-   first install builds the image on the Pi and takes a few minutes.
-4. Select **Start**, then open the **Log** tab. You should see
-   `Run: add-on 0.3.0, capture in /share/bosch_ebike/run-...`.
+1. **Settings → Apps → App store** (called *Add-on store* on older
+   versions) → ⋮ (top right) → **Repositories**, add
+   `https://github.com/zglate/ha-bosch-ebike-addon`, then close the dialog.
+2. Find **Bosch eBike** in the store (it's marked *experimental*), select
+   **Install**, then **Start**.
+3. A **notification** in Home Assistant's sidebar says what to do next. If
+   anything is missing (MQTT broker, Bluetooth), the notification says so
+   and how to fix it; the app keeps checking and carries on by itself.
 
-If it doesn't appear under Local apps, check **Settings → System → Logs**
-with **Supervisor** selected for errors about `config.yaml`.
+## Add your bike
 
-## Let Home Assistant find the bike (recommended)
+Switch the bike on next to the Home Assistant host. The app scans for Bosch
+bikes by itself (15 s every minute while no bike is connected) and lists the
+ones it hears in the **Nearby Bosch eBikes** dropdown on the *Bosch eBike
+Bridge* device (Settings → Devices & services → Devices), with whether each
+is in pairing mode. The setup notification and *Setup Status* also show
+each one's signal strength.
 
-The app scans for Bosch bikes itself. To pair with yours:
+Then, either:
 
-1. Switch the bike on next to the Home Assistant host and put it in
-   **pairing mode**. On Bosch controllers this is typically a long press of
-   the power button until the light or display shows the Bluetooth/blue
-   pairing indication; check your controller's manual.
-2. Press **Start pairing** on the *Bosch eBike Bridge* device (Settings →
-   Devices & services → Devices).
-3. Within the 5-minute window the app pairs with the bike that says it's
-   ready to pair, then explores it over MCSP. A notification shows its
-   address with a ready-to-paste `bikes` entry.
+- **Pick it:** choose your bike in **Nearby Bosch eBikes** and press **Pair
+  selected bike**. Your pick is the consent. Whether a bike accepts pairing
+  outside its pairing mode is **not tested on a real bike yet**; if pairing
+  fails, put the bike in pairing mode and try again (or use the other way).
+  The strongest signal is usually the bike right next to the host.
+- **Pairing mode:** put the bike in pairing mode, then press **Start
+  pairing**. For 5 minutes the app pairs with a bike that says it's ready to
+  pair.
 
-It only pairs while the window is open **and** the bike signals pairing
-mode, so it can't take a neighbour's bike. A Bosch bike it hears that isn't
-in pairing mode just gets a "found nearby" notification.
+Once paired, the setup notification goes away, the bike gets its own device
+(model, serial number and firmware version read from the bike), and the app
+remembers it and reconnects by itself. It explores it over MCSP, then lets
+go so the Flow app can connect (see *Your first test session*).
 
-This gives the MCSP data. The official LDI stream additionally needs the
-Flow app step below (Bosch only streams LDI to accessories added there).
+The app never pairs without one of those two steps, so it can't take a
+neighbour's bike. **Setup Status** on the bridge device always says where
+setup stands.
 
-## Pair the bike in the Flow app (for the LDI)
+### Also get the official live-data feed (LDI)
 
-The add-on accepts a new bike only during a **5-minute pairing window**,
-opened with the **Start pairing** button on the *Bosch eBike Bridge* device.
+Bosch only streams the LDI (live speed, cadence, rider power) to accessories
+added in the Flow app:
 
-1. Switch the bike on next to the Home Assistant host.
-2. Press **Start pairing** in Home Assistant.
-3. In the **Bosch eBike Flow** app: your bike → ⚙ → **Components** →
-   **Add new device**.
-4. The bike looks for accessories; pick **HA eBike Bridge** (it may show as
-   a bare address). It can take 3–4 tries.
-5. The log shows `eBike AA:BB:... connected – LDI yes, MCSP ...` and a new
-   device with sensors appears in Home Assistant.
+1. Press **Start pairing** in Home Assistant (opens a 5-minute window).
+2. In the **Bosch eBike Flow** app: your bike → ⚙ → **Components** → **Add
+   new device**.
+3. Pick **HA eBike Bridge** (it may show as a bare address). It can take 3–4
+   tries.
+4. The log shows `eBike AA:BB:... connected – LDI yes, ...` and the LDI
+   sensors appear on the bike's device.
 
-From then on the bike reconnects by itself whenever it's on and in range.
-
-**Then:** copy the bike's address from that log line into the `bikes`
-option (with a name and `battery_wh`). The add-on only ever opens its own
-connection to bikes listed there or already paired, never anyone else's.
+Optional: list the bike under the `bikes` option to give it a name or its
+own `battery_wh`.
 
 ## Your first test session
 
-1. Start the add-on with default options and pair the bike as above.
+1. Start the add-on with default options and add the bike as above.
 2. Leave the bike **switched on and standing still** next to the host for
    about **10 minutes**. The first time, the add-on reads the Flow app's
    start-up set, then sweeps every readable datapoint (~700), gently paced.
-   Watch the *MCSP Status* entity on the bike's device: it goes through
-   `listening` → `handshake sent` → `reading start-up set` →
-   `sweeping ...` → `idle (sweep complete)`.
+   Watch the bike's **Status** entity: `Exploring (MCSP): reading start-up
+   set` → `Exploring (MCSP): sweeping datapoints, 40 %` → `Released for the
+   Flow app; next check after 19:40`. *MCSP Status* has the detail.
 3. Also try: plugging the charger in for a few minutes, and pressing the
    assist +/- buttons (no need to ride).
 4. Switch the bike off. Then send back the run folder (see below).
@@ -157,6 +157,19 @@ Support, Charging Active, software versions of drive unit / battery /
 controller / head unit, plus several "(raw)" sensors whose units aren't
 confirmed yet.
 
+**Status:** a plain-language summary per bike (connected over LDI and/or
+MCSP, exploring with progress, released until when, not connected).
+
+**Firmware:** one **update entity** per component (drive unit, battery,
+controller, display) with the version your bike reports and the latest
+version Bosch publishes, plus release notes. It shows *update available*
+when Bosch lists a newer one, and one notification per new version. It's
+information only: install updates with the Flow app. If the app can't match
+a component to Bosch's list (or the check hasn't succeeded in a week), its
+update entity shows *unavailable* rather than claiming you're up to date.
+With `firmware_check` off the update entities are removed. Bosch's list is per product line, not a check of
+your particular bike's eligibility.
+
 **Diagnostics:** *MCSP Status* (state, with every counter, milestone and
 start-up stage as attributes) and *MCSP Datapoints with Values*. Every
 datapoint that returns a value also gets its own entity, **hidden by
@@ -165,8 +178,9 @@ of them.
 
 A value the bike hasn't sent shows as *unknown*, never as zero or off.
 
-Bridge buttons: **Start pairing**, **Forget paired bikes**, **Run MCSP read
-sweep**.
+**Bridge device:** *Setup Status*, *Nearby Bosch eBikes*, **Pair selected
+bike**, **Start pairing**, **Forget paired bikes**, **Run MCSP read sweep**,
+*Pairing Active*.
 
 ## Useful Home Assistant helpers
 
@@ -199,22 +213,32 @@ confirmed).
 | `raw_entities` | true | One hidden diagnostic entity per decoded datapoint |
 | `capture` | true | Write the debug capture to `/share/bosch_ebike` |
 | `open_pairing_on_start` | false | Open the pairing window every time the add-on starts |
+| `firmware_check` | true | Compare the bike's firmware with Bosch's published versions daily |
+| `firmware_page` | Bosch Canada's software-update page | Page to read published versions from (use your country's) |
 | `mqtt_host` etc. | empty | Only if you don't use the Mosquitto add-on |
 
 ## How it shares Bluetooth with Home Assistant
 
 - It only reacts to devices that expose Bosch services or advertise as Bosch.
 - It never removes other devices' pairings, and never its bikes' by itself.
-- Pairing is only accepted during the window (or from a bike it already
-  knows); the adapter's *Pairable* setting is on only for that window.
+- Pairing only happens during the window, for a bike you picked with **Pair
+  selected bike**, or with a bike it already knows; the adapter's *Pairable*
+  setting is on only for the window or that one pairing attempt.
 - It never makes the adapter discoverable over classic Bluetooth.
 - One connection attempt at a time, at most one every 30 s.
 - It re-advertises by itself after an adapter reset or `bluetoothd` restart.
 
 ## Troubleshooting
 
-Setup problems (no MQTT broker, no Bluetooth, a new bike connected) appear as
-**notifications in Home Assistant** with what to do.
+Setup problems (no MQTT broker, no Bluetooth, no bike added yet, pairing
+failed) appear as **notifications in Home Assistant** with what to do, and
+*Setup Status* on the bridge device says where setup stands.
+
+**Nearby Bosch eBikes stays empty.** Check the add-on log: after every scan
+it says which Bosch bikes it heard, or "no Bosch eBike heard". Make sure the
+bike is switched on (display or controller lit) and close to the host.
+Bosch bikes may only advertise for a while after being switched on; switch
+it off and on again.
 
 **"Waiting for MQTT broker".** Mosquitto registers its connection details
 with the Supervisor each time it starts. If the app says it's waiting:
@@ -224,14 +248,15 @@ send service information to the Supervisor"*. This app picks it up within
 
 **MCSP Status says "MCSP not exposed on this connection".** The link the
 bike opened for the LDI doesn't carry MCSP. With `mcsp_connect` on, the
-add-on connects to the bike's own advertisement instead, *if the bike's
-address is listed under `bikes`* (or it's already paired).
+add-on connects to the bike's own advertisement instead, once the bike is
+added (see *Add your bike*).
 
-**"Bosch device ... isn't one of your bikes".** Add its address under
-`bikes` if it is yours.
+**"Bosch device ... isn't one of your bikes".** Add it with **Pair selected
+bike** if it is yours.
 
-**The bike never finds the bridge, or pairing fails.**
-1. Press **Start pairing** and retry within 5 minutes, with the bike on.
+**Pairing fails, or the Flow app never finds the bridge.**
+1. Retry **Pair selected bike** with the bike on, or press **Start pairing**
+   and retry within 5 minutes.
 2. Remove any old "HA eBike Bridge" entry under Components in the Flow app.
 3. To check whether Home Assistant's Bluetooth integration is in the way:
    Settings → Devices & services → Bluetooth → the adapter → ⋮ → Disable,

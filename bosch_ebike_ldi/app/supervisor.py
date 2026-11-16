@@ -98,28 +98,20 @@ Check **Settings → System → Hardware** for a Bluetooth adapter and that the 
 `adapter` option matches it (usually `hci0`), then restart the app.
 """
 
-BIKE_NEARBY = """\
-A Bosch eBike is advertising nearby: `{address}` (signal {rssi} dBm).
-
-To let Home Assistant pair with it: switch the bike on next to the Home \
-Assistant host, put it in **pairing mode** (see the app's Documentation \
-tab), and press **Start pairing** on the *Bosch eBike Bridge* device. The \
-app pairs with a bike only while that window is open and the bike itself \
-says it's ready to pair, so it never takes a neighbour's bike.
-"""
-
 PAIRING_FAILED = """\
 Pairing with the Bosch eBike `{address}` didn't complete: *{reason}*
 
-Make sure the bike is on and in pairing mode, then press **Start pairing** \
-again.
+Make sure the bike is on and close to Home Assistant, then pick it in \
+**Nearby Bosch eBikes** and press **Pair selected bike** again (or put the \
+bike in pairing mode and press **Start pairing**).
 """
 
 BIKE_FOUND = """\
-**{name}** connected over Bluetooth (address `{address}`).
+**{name}** connected over Bluetooth (address `{address}`). It's remembered \
+and reconnects by itself; nothing else is needed.
 
-To name it and let the app open its own connection to it (for the extra \
-MCSP data), add this to the app's **Configuration → bikes**:
+Optional, to give it a name or a different battery size, add this to the \
+app's **Configuration → bikes**:
 
 ```yaml
 - address: "{address}"

@@ -45,9 +45,14 @@ import dbus.service
 import dbus.mainloop.glib
 from gi.repository import GLib
 
+import threading
+
 import ble_policy
 import datapoints
+import firmware
 import mcsp
+import status
+from nearby import Nearby
 from capture import Capture
 from explorer import BikeExplorer, Hooks, find_char, gatt_objects, inventory
 from explorer import plain as explorer_plain
@@ -106,6 +111,11 @@ CONNECT_GLOBAL_GAP_SEC = float(os.environ.get("BOSCH_CONNECT_GAP_SEC", 30))   # 
 # SCAN_EVERY_SEC while no bike is connected, and continuously during pairing.
 SCAN_EVERY_SEC = int(os.environ.get("BOSCH_SCAN_EVERY_SEC", 60))              # env: tests
 SCAN_FOR_SEC = int(os.environ.get("BOSCH_SCAN_FOR_SEC", 15))                  # env: tests
+
+# Firmware check: first one shortly after start, then daily.
+FIRMWARE_FIRST_CHECK_SEC = int(os.environ.get("BOSCH_FIRMWARE_FIRST_SEC", 60))  # env: tests
+FIRMWARE_STALE_SEC = 7 * 24 * 3600   # older published versions are not trusted
+_UNSET = object()                    # "nothing shown yet" for the setup notice
 
 # Where the debug capture and report go (the add-on maps /share), and where
 # the explorer remembers which firmware it has already swept.
@@ -348,8 +358,18 @@ class EbikeBridge:
                               if isinstance(s, dict) and s.get("adopted")}
         self._scanning = False
         self._scan_stop_timer = None
+        self._scan_heard: dict[str, dict] = {}       # address -> rssi/pairable this scan
         self._adopting: set[str] = set()             # device paths being paired
-        self._nearby_announced: set[str] = set()     # strangers, notified once
+        # Bikes heard nearby (dropdown), the user's pick, and consent to pair it.
+        self._nearby = Nearby()
+        self._selected: str | None = None
+        self._consented: set[str] = set()
+        self._last_scan_heard: int | None = None
+        self._setup_note = _UNSET                    # key of the setup notice shown
+        self._fw_removed: set[str] = set()           # bikes whose update entities were removed
+        # Firmware: Bosch's published versions (cached across restarts).
+        self._firmware_check = bool(config.get("firmware_check", True))
+        self._firmware_page = config.get("firmware_page") or firmware.DEFAULT_PAGE
 
         mqtt_cfg = config["mqtt"]
         self._mqtt = HaMqttPublisher(
@@ -483,8 +503,9 @@ class EbikeBridge:
     def _pairing_allowed(self, device_path: str) -> bool:
         """ADD-ON: agent callback — accept only during the window or known bikes."""
         address = self._device_address(device_path)
+        # Known bikes, and a bike the user explicitly picked in Home Assistant.
         return ble_policy.should_accept_pairing(
-            address, self._window_open(), self._known_bikes
+            address, self._window_open(), self._known_bikes | self._consented
         )
 
     def _device_address(self, device_path: str) -> str | None:
@@ -556,8 +577,9 @@ class EbikeBridge:
         self._set_pairable(True)
         self._publish_pairing_state()
         self._readvertise()
+        self._refresh_setup()
         # Look for bikes in pairing mode for the whole window.
-        if self._mcsp_connect and self._adapter_path:
+        if self._adapter_path:
             self._start_scan(PAIRING_WINDOW_SEC)
         # Re-advertise privately again once the window elapses, so we don't stay
         # discoverable forever. GLib timeout fires on the main loop thread.
@@ -566,10 +588,16 @@ class EbikeBridge:
     # ── Finding bikes ourselves ──────────────────────────────────────────────
 
     def _scan_tick(self) -> bool:
-        """Every SCAN_EVERY_SEC: a short scan while no bike is connected."""
+        """Every SCAN_EVERY_SEC: a short scan while no bike is connected, plus
+        housekeeping (forget bikes not heard lately, keep Status texts current)."""
         connected = any(b.get("char_path") for b in self._bikes.values())
-        if self._mcsp_connect and not connected and not self._scanning:
+        if not connected and not self._scanning:
             self._start_scan(SCAN_FOR_SEC)
+        if self._nearby.prune():
+            self._publish_nearby()
+            self._refresh_setup()
+        for addr in self._bikes:
+            self._refresh_bike(addr)
         return True
 
     def _start_scan(self, seconds: int) -> None:
@@ -586,18 +614,39 @@ class EbikeBridge:
         if self._scanning:
             return
         self._scanning = True
+        self._scan_heard: dict[str, dict] = {}
         try:
             adapter.SetDiscoveryFilter({"Transport": "le"})
         except dbus.DBusException as exc:
             log.debug("SetDiscoveryFilter: %s", exc)
-        adapter.StartDiscovery(
-            reply_handler=lambda: self._capture.event("scan_start", seconds=seconds),
-            error_handler=lambda e: self._capture.event("scan_error", error=str(e)))
+
+        def started():
+            log.info("Scanning for Bosch eBikes (%d s)", seconds)
+            self._capture.event("scan_start", seconds=seconds)
+
+        def failed(e):
+            log.warning("Bluetooth scan could not start: %s", e)
+            self._capture.event("scan_error", error=str(e))
+
+        adapter.StartDiscovery(reply_handler=started, error_handler=failed)
 
     def _stop_scan(self) -> bool:
         self._scan_stop_timer = None
         if self._scanning:
             self._scanning = False
+            heard = self._scan_heard
+            if heard:
+                log.info("Scan done: heard %s", ", ".join(
+                    f"{a} (signal {i.get('rssi')} dBm, {'ready to pair' if i.get('pairable') else 'not in pairing mode'}"
+                    f"{', yours' if a in self._known_bikes else ''})" for a, i in heard.items()))
+            else:
+                log.info("Scan done: no Bosch eBike heard (is it switched on and within "
+                         "range of the Home Assistant host?)")
+            self._capture.event("scan_result", heard=heard)
+            self._last_scan_heard = len(heard)
+            if self._nearby.prune():
+                self._publish_nearby()
+            self._refresh_setup()
             dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, self._adapter_path),
                            ADAPTER_IFACE).StopDiscovery(
                 reply_handler=lambda: self._capture.event("scan_stop"),
@@ -605,30 +654,66 @@ class EbikeBridge:
         return False
 
     def _adopt(self, device_path: str, addr: str, info: dict) -> None:
-        """Pair with a bike that says it's ready to pair, during the window.
+        """Pair with a bike the user agreed to. Two ways in:
 
-        The user pressed Start pairing (consent on our side) and the bike's
-        advertisement says pairable (consent on the bike's side). After this
-        the bike is known and reconnects by itself.
+        - Start pairing was pressed and the bike advertises "ready to pair";
+        - the user picked it in Nearby Bosch eBikes and pressed Pair selected
+          bike (works whatever the bike advertises).
+        After this the bike is known and reconnects by itself.
         """
         if device_path in self._adopting:
+            log.info("Pairing with %s already in progress", addr)
             return
         self._adopting.add(device_path)
         self._central_paths.add(device_path)
-        log.info("Pairing with Bosch eBike %s (ready to pair, signal %s dBm)",
-                 addr, info.get("rssi"))
+        # The kernel only stores a bond while the adapter is bondable
+        # (Pairable); outside the window switch it on just for this Pair().
+        if not self._window_open():
+            self._set_pairable(True)
+
+        def done() -> None:
+            self._adopting.discard(device_path)
+            if not self._window_open():
+                self._set_pairable(self._pairable_initial)
+        log.info("Pairing with Bosch eBike %s (%s, signal %s dBm)", addr,
+                 "ready to pair" if info.get("pairable") else "not in pairing mode",
+                 info.get("rssi"))
         self._capture.event("pair_attempt", address=addr, path=device_path)
 
         def paired() -> None:
+            done()
             self._known_bikes.add(addr)
             self._explorer_state.setdefault(addr, {})["adopted"] = (
                 datetime.now(timezone.utc).isoformat(timespec="seconds"))
             self._save_state()
             self._capture.event("paired", address=addr)
             log.info("Paired with %s", addr)
+            supervisor.dismiss(f"pair_{addr.replace(':', '').lower()}")
+            if self._selected == addr:
+                self._selected = None
+            entry = self._nearby.get(addr)
+            if entry:
+                self._nearby.heard(addr, entry["path"], entry["rssi"], entry["pairable"], True)
+            self._publish_nearby()
+            self._refresh_setup()
+            # Services may have resolved while pairing was still running.
+            try:
+                props = dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, device_path),
+                                       PROPS_IFACE)
+                if bool(props.Get(DEVICE_IFACE, "ServicesResolved")):
+                    self._on_services_resolved(device_path, addr)
+            except dbus.DBusException as exc:
+                log.debug("ServicesResolved check for %s: %s", addr, exc)
 
         def failed(exc) -> None:
-            self._adopting.discard(device_path)
+            done()
+            self._consented.discard(addr)
+            # Don't keep a link to a bike that isn't ours: Pair() opened it.
+            self._central_paths.discard(device_path)
+            dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, device_path),
+                           DEVICE_IFACE).Disconnect(
+                reply_handler=lambda: None,
+                error_handler=lambda e: log.debug("Disconnect %s: %s", addr, e))
             log.warning("Pairing with %s failed: %s", addr, exc.get_dbus_name())
             self._capture.event("pair_failed", address=addr, error=str(exc))
             supervisor.notify(f"pair_{addr.replace(':', '').lower()}",
@@ -645,6 +730,7 @@ class EbikeBridge:
             self._set_pairable(self._pairable_initial)
             self._publish_pairing_state()
             self._readvertise()
+            self._refresh_setup()
         return False  # one-shot timer
 
     def _publish_pairing_state(self) -> None:
@@ -750,6 +836,13 @@ class EbikeBridge:
                 log.info("No bond to remove for %s: %s", addr, exc.get_dbus_name())
         # Configured bikes stay known (the user listed them); learned ones go.
         self._known_bikes = {b["address"].upper() for b in self._cfg.get("bikes", [])}
+        for state in self._explorer_state.values():
+            if isinstance(state, dict):
+                state.pop("adopted", None)
+        self._save_state()
+        self._consented.clear()
+        self._adopting.clear()
+        self._selected = None
         self._connect_fails.clear()
         log.warning("Bikes forgotten — add the bike again in the Flow app")
         self.start_pairing()
@@ -830,6 +923,10 @@ class EbikeBridge:
             bike["char_path"] = None
             self._end_session(bike_addr, "disconnected")
         self._capture.event("bike_offline", bike=bike_addr)
+        if bike:
+            bike["ldi"] = False
+            self._refresh_bike(bike_addr)
+            self._refresh_setup()
         self._capture.write_report()
         self._mqtt.publish_availability(bike_addr, False)
 
@@ -908,6 +1005,11 @@ class EbikeBridge:
     def _on_services_resolved(self, device_path: str, addr: str) -> None:
         """Called once BlueZ has fully resolved the eBike's GATT services."""
         bike_addr = addr.upper()
+        if device_path in self._adopting:
+            # Pair() opened this link; it becomes ours only once pairing
+            # succeeds (paired() runs this again then).
+            log.info("Services of %s resolved; waiting for pairing to finish", bike_addr)
+            return
         char_path = self._find_ldi_char(device_path)
         chars = inventory(gatt_objects(self._bus, device_path))
         has_mcsp = bool(find_char(chars, mcsp.RX_UUID) and find_char(chars, mcsp.TX_UUID))
@@ -938,6 +1040,9 @@ class EbikeBridge:
         self._bikes[bike_addr]["char_path"] = char_path or device_path
         # Did we open this link (central connect), or did the bike (LDI)?
         self._bikes[bike_addr]["central"] = device_path in self._central_paths
+        self._bikes[bike_addr]["ldi"] = bool(char_path)
+        self._bikes[bike_addr]["last_seen"] = datetime.now(timezone.utc).isoformat(
+            timespec="seconds")
         self._bosch_paths.add(device_path)
         self._capture.event("bike_connected", bike=bike_addr, path=device_path,
                             ldi=bool(char_path), mcsp=has_mcsp,
@@ -948,6 +1053,8 @@ class EbikeBridge:
         if char_path:
             self._subscribe(char_path, bike_addr)
         self._start_explorer(bike_addr, device_path)
+        self._refresh_bike(bike_addr)
+        self._refresh_setup()
 
         # BlueZ released our advert when this bike connected. Re-register it so
         # a second eBike can still discover the bridge by name (not just MAC).
@@ -979,8 +1086,10 @@ class EbikeBridge:
             self._capture.bike(addr)["sessions"].append(dict(explorer.mcsp.status))
         bike["explorer"] = None
 
-    def _on_mcsp_status(self, addr: str, status: dict) -> None:
-        self._mqtt.publish_mcsp_status(addr, self._bikes[addr]["name"], status)
+    def _on_mcsp_status(self, addr: str, mcsp_status: dict) -> None:
+        self._bikes[addr]["mcsp_status"] = mcsp_status
+        self._mqtt.publish_mcsp_status(addr, self._bikes[addr]["name"], mcsp_status)
+        self._refresh_bike(addr)
 
     def _should_sweep(self, addr: str, firmware: str | None) -> bool:
         """Sweep once per bike per drive-unit firmware version."""
@@ -1033,6 +1142,7 @@ class EbikeBridge:
             self._capture.event("release_skipped", bike=addr, reason="bike-initiated link")
             return
         self._hold_off[path] = time.monotonic() + self._reconnect_hours * 3600
+        bike["released_until"] = time.time() + self._reconnect_hours * 3600
         log.info("[%s] Exploration done; disconnecting so the Flow app can connect "
                  "(next connect in %s h)", addr, self._reconnect_hours)
         self._capture.event("released", bike=addr, reconnect_hours=self._reconnect_hours)
@@ -1040,10 +1150,14 @@ class EbikeBridge:
             reply_handler=lambda: None,
             error_handler=lambda e: self._capture.event("release_failed", bike=addr,
                                                         error=str(e)))
+        self._refresh_bike(addr)
 
     def _on_mcsp_value(self, addr: str, dp_id: int, value) -> None:
         """Publish an MCSP datapoint that has a Home Assistant entity."""
         bike = self._bikes[addr]
+        bike["last_seen"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        if dp_id in datapoints.IDENTITY:
+            self._on_identity(addr, dp_id, value)
         if dp_id in (0x180D, 0x180C) and isinstance(value, list):
             # Long names preferred; short names only until long ones arrive.
             if dp_id == 0x180D or not bike.get("assist_names"):
@@ -1086,18 +1200,180 @@ class EbikeBridge:
             log.info("Bosch advertisement from %s: %s", addr, info)
             self._capture.advert(addr, info)
             self._capture.event("advert", address=addr, live=live, **info)
-        if not (self._mcsp_connect and live):
+        if not live:
+            return
+        if self._scanning:
+            self._scan_heard[addr] = {"rssi": info.get("rssi"), "pairable": info.get("pairable")}
+        # The Nearby dropdown and Setup Status show every Bosch bike heard.
+        if self._nearby.heard(addr, device_path, info.get("rssi"), bool(info.get("pairable")),
+                              addr in self._known_bikes):
+            self._publish_nearby()
+            self._refresh_setup()
+        if not self._mcsp_connect:
             return
         if addr in self._known_bikes:
             self._maybe_connect(device_path)
         elif self._window_open() and info.get("pairable"):
             self._adopt(device_path, addr, info)
-        elif addr not in self._nearby_announced:
-            self._nearby_announced.add(addr)
-            supervisor.notify(f"nearby_{addr.replace(':', '').lower()}",
-                              "Bosch eBike found nearby",
-                              supervisor.BIKE_NEARBY.format(address=addr,
-                                                            rssi=info.get("rssi")))
+
+    # ── Nearby dropdown, Setup Status, bike Status ───────────────────────────
+
+    def _publish_nearby(self) -> None:
+        options = self._nearby.options()
+        selected = next((o for o in options if Nearby.address_of(o) == self._selected), None)
+        if selected is None:
+            self._selected, selected = None, options[0]
+        self._mqtt.set_select("nearby", options, selected)
+
+    def _on_nearby_selected(self, option: str) -> bool:
+        self._selected = Nearby.address_of(option)
+        log.info("Nearby bike selected: %s", self._selected or "none")
+        self._publish_nearby()
+        return False
+
+    def _pair_selected(self) -> bool:
+        """'Pair selected bike': the user's explicit pick is the consent."""
+        entry = self._nearby.get(self._selected) if self._selected else None
+        if entry is None:
+            log.warning("Pair selected bike: pick a bike under 'Nearby Bosch eBikes' first")
+            self._capture.event("pair_selected_none")
+            return False
+        if self._selected in self._known_bikes:
+            log.info("Pair selected bike: %s is already added", self._selected)
+            return False
+        self._consented.add(self._selected)
+        self._adopt(entry["path"], self._selected,
+                    {"rssi": entry["rssi"], "pairable": entry["pairable"]})
+        return False
+
+    def _refresh_setup(self) -> None:
+        """Setup Status sensor plus the evolving 'setup' notification."""
+        connected = sorted(a for a, b in self._bikes.items() if b.get("char_path"))
+        state, attributes, note = status.setup_status(
+            sorted(self._known_bikes), connected, self._nearby.strangers(),
+            self._window_open(), self._last_scan_heard)
+        self._mqtt.publish_setup_status(state, attributes)
+        key = None if note is None else tuple(
+            (a, b["pairable"]) for a, b in sorted(self._nearby.strangers()))
+        if key == self._setup_note:
+            return
+        if note is None:
+            supervisor.dismiss("setup")
+            self._setup_note = None
+        elif supervisor.notify("setup", "Bosch eBike: add your bike", note):
+            self._setup_note = key
+
+    def _refresh_bike(self, addr: str) -> None:
+        bike = self._bikes.get(addr)
+        if not bike:
+            return
+        state, attributes = status.bike_status(
+            bool(bike.get("ldi")), bike.get("mcsp_status"), bike.get("released_until"),
+            bike.get("last_seen"), time.time())
+        self._mqtt.publish_bike_status(addr, bike["name"], state, attributes)
+
+    # ── Identity and firmware ────────────────────────────────────────────────
+
+    def _on_identity(self, addr: str, dp_id: int, value) -> None:
+        """A component told us what it is; update the device and firmware."""
+        component, field = datapoints.IDENTITY[dp_id]
+        bike = self._bikes[addr]
+        identity = bike.setdefault("identity", {}).setdefault(component, {})
+        if identity.get(field) == value:
+            return
+        identity[field] = value
+        self._capture.bike(addr).setdefault("identity", {})[component] = dict(identity)
+        drive = bike["identity"].get("DriveUnit", {})
+        info = {k: v for k, v in (("model", drive.get("productName")),
+                                  ("sw_version", drive.get("softwareVersion")),
+                                  ("hw_version", drive.get("hardwareVersion")),
+                                  ("serial_number", drive.get("serialNumber"))) if v}
+        self._mqtt.set_device_info(addr, bike["name"], info)
+        self._refresh_bike(addr)
+        if field in ("productName", "softwareVersion"):
+            self._evaluate_firmware(addr)
+
+    def _firmware_tick(self) -> bool:
+        """Daily: fetch Bosch's published versions in the background."""
+        if not self._firmware_check:
+            return True
+
+        def work():
+            try:
+                versions = firmware.parse_versions(firmware.fetch(self._firmware_page))
+                GLib.idle_add(self._firmware_loaded, versions, None)
+            except Exception as exc:          # network, HTTP, parsing: never fatal
+                GLib.idle_add(self._firmware_loaded, None, str(exc))
+        threading.Thread(target=work, daemon=True).start()
+        return True
+
+    def _firmware_loaded(self, versions: dict | None, error: str | None) -> bool:
+        if not versions:
+            log.warning("Firmware check failed (%s); will retry tomorrow",
+                        error or "no versions on the page")
+            self._capture.event("firmware_check_failed", error=error)
+            return False
+        self._explorer_state["_firmware"] = {
+            "versions": versions, "page": self._firmware_page,
+            "checked": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+        self._save_state()
+        log.info("Firmware check: Bosch publishes %d component versions", len(versions))
+        self._capture.event("firmware_versions", versions=versions)
+        for addr in self._bikes:
+            self._evaluate_firmware(addr)
+        return False
+
+    def _evaluate_firmware(self, addr: str) -> None:
+        """Publish an update entity per component, and notify once per release."""
+        bike = self._bikes[addr]
+        if not self._firmware_check:
+            if addr not in self._fw_removed:      # entities from an earlier run go
+                self._fw_removed.add(addr)
+                for key, _title, _component in firmware.COMPONENTS:
+                    self._mqtt.remove_firmware(addr, key)
+            return
+        versions = self._published_versions()
+        notified = self._explorer_state.setdefault(addr, {}).setdefault("fw_notified", {})
+        for key, title, component in firmware.COMPONENTS:
+            identity = bike.get("identity", {}).get(component, {})
+            installed = identity.get("softwareVersion")
+            if not installed:
+                continue
+            published = firmware.match(identity.get("productName"), component, versions)
+            self._mqtt.publish_firmware(addr, bike["name"], key, title, firmware.update_payload(
+                title, installed, published, self._firmware_page), available=bool(published))
+            note_id = f"firmware_{addr.replace(':', '').lower()}_{key}"
+            if published and not firmware.is_newer(published[1], installed) \
+                    and key in notified:
+                notified.pop(key)                 # installed: the notice is done
+                self._save_state()
+                supervisor.dismiss(note_id)
+            if published and firmware.is_newer(published[1], installed) \
+                    and notified.get(key) != published[1]:
+                notified[key] = published[1]
+                self._save_state()
+                log.info("[%s] %s firmware %s published (installed %s)", addr, title,
+                         published[1], installed)
+                supervisor.notify(
+                    note_id,
+                    f"Bosch eBike: {title} firmware {published[1]} available",
+                    f"Bosch lists **{published[1]}** for *{published[0]}*; your bike "
+                    f"reports **{installed}**. Update with the Bosch Flow app. This is "
+                    f"Bosch's published version for that product line, not a check "
+                    f"of your bike's eligibility. [Release notes]"
+                    f"({firmware.release_notes_url(self._firmware_page)})")
+
+    def _published_versions(self) -> dict:
+        """Bosch's published versions, if checked recently from the configured page."""
+        cache = self._explorer_state.get("_firmware") or {}
+        try:
+            age = (datetime.now(timezone.utc)
+                   - datetime.fromisoformat(cache["checked"])).total_seconds()
+        except (KeyError, TypeError, ValueError):
+            return {}
+        if cache.get("page") != self._firmware_page or age > FIRMWARE_STALE_SEC:
+            return {}
+        return cache.get("versions") or {}
 
     def _maybe_connect(self, device_path: str) -> None:
         """Connect to one of *your* advertising bikes as a central (the Flow
@@ -1418,12 +1694,26 @@ class EbikeBridge:
             lambda: GLib.idle_add(self._forget_bikes_idle)
         )
         self._mqtt.publish_sweep_discovery(lambda: GLib.idle_add(self._sweep_idle))
+        # Finding and adding a bike from Home Assistant.
+        self._mqtt.add_select("nearby", "Nearby Bosch eBikes", "mdi:bicycle-electric",
+                              self._nearby.options(),
+                              lambda option: GLib.idle_add(self._on_nearby_selected, option))
+        self._mqtt.add_button("pair_selected", "Pair selected bike", "mdi:link-variant",
+                              lambda: GLib.idle_add(self._pair_selected))
+        # Firmware: first check a minute after start, then daily.
+        GLib.timeout_add_seconds(FIRMWARE_FIRST_CHECK_SEC,
+                                 lambda: self._firmware_tick() and False)
+        GLib.timeout_add_seconds(24 * 3600, self._firmware_tick)
         self._publish_pairing_state()
         # Report every minute (plus at disconnects and shutdown): enough detail
         # without rewriting a large file on the SD card every few seconds.
         GLib.timeout_add_seconds(60, self._capture.write_report)
 
         self._monitor()
+        # After _monitor(): it adds bikes bonded before this start.
+        self._refresh_setup()
+        for addr in self._bikes:
+            self._refresh_bike(addr)
         GLib.timeout_add_seconds(ADVERTISING_WATCHDOG_SEC, self._advertising_watchdog)
         GLib.timeout_add_seconds(SCAN_EVERY_SEC, self._scan_tick)
         GLib.timeout_add_seconds(2, lambda: self._scan_tick() and False)   # first scan now

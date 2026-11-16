@@ -24,6 +24,8 @@ def test_defaults_with_mosquitto_service():
         "mcsp": True, "mcsp_connect": True, "mcsp_sweep": True,
         "gatt_listen": True, "raw_entities": True, "capture": True,
         "open_pairing_on_start": False, "mcsp_reconnect_hours": 6.0,
+        "firmware_check": True,
+        "firmware_page": "https://www.bosch-ebike.com/ca/service/software-update",
     }
 
 

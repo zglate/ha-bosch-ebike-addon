@@ -1,5 +1,5 @@
 name: Bosch eBike
-version: "0.3.2"
+version: "0.4.0"
 slug: bosch_ebike_ldi
 description: >-
   VERY EARLY TEST BUILD, don't use yet. Live data and diagnostics from a
@@ -36,6 +36,8 @@ options:
   capture: true
   open_pairing_on_start: false
   mcsp_reconnect_hours: 6
+  firmware_check: true
+  firmware_page: https://www.bosch-ebike.com/ca/service/software-update
 schema:
   bridge_name: str
   adapter: str
@@ -54,6 +56,8 @@ schema:
   capture: bool
   open_pairing_on_start: bool
   mcsp_reconnect_hours: float(0,168)
+  firmware_check: bool
+  firmware_page: url
   mqtt_host: str?
   mqtt_port: port?
   mqtt_username: str?
