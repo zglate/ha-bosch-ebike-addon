@@ -1,0 +1,7183 @@
+{
+"0x0000": {
+"component": "Battery",
+"factor": 1,
+"kind": "void",
+"name": "virtualPlaceholderGateway",
+"readable": false
+},
+"0x0081": {
+"component": "Battery",
+"factor": 1,
+"kind": "string",
+"name": "serialNumber",
+"readable": true
+},
+"0x0082": {
+"component": "Battery",
+"factor": 1,
+"kind": "string",
+"name": "partNumber",
+"readable": true
+},
+"0x0083": {
+"component": "Battery",
+"factor": 1,
+"kind": "string",
+"name": "productCode",
+"readable": true
+},
+"0x0084": {
+"component": "Battery",
+"factor": 1,
+"kind": "string",
+"name": "hardwareVersion",
+"readable": true
+},
+"0x0085": {
+"component": "Battery",
+"factor": 1,
+"kind": "string",
+"name": "hardwareSoftwareVersion",
+"readable": true
+},
+"0x0086": {
+"component": "Battery",
+"factor": 1,
+"kind": "string",
+"name": "softwareVersion",
+"readable": true
+},
+"0x0087": {
+"component": "Battery",
+"factor": 1,
+"kind": "string",
+"name": "bootloaderSoftwareVersion",
+"readable": true
+},
+"0x0088": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "stateOfCharge",
+"readable": true
+},
+"0x0089": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "chargerConnected",
+"readable": true
+},
+"0x008a": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "chargingActive",
+"readable": true
+},
+"0x008b": {
+"component": "Battery",
+"factor": 10,
+"kind": "sint",
+"name": "presentPackTemperature",
+"readable": true,
+"unit": "degC"
+},
+"0x008c": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "presentBatteryVoltage",
+"readable": true
+},
+"0x008d": {
+"component": "Battery",
+"factor": 1,
+"kind": "rpc",
+"name": "requestShutdown",
+"readable": false,
+"struct": "RequestShutdownParams"
+},
+"0x008e": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "prepareShutdown",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_ShutdownReasonEnum"
+},
+"0x008f": {
+"component": "Battery",
+"factor": 1,
+"kind": "rpc",
+"name": "noShutdown",
+"readable": false
+},
+"0x0090": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "wakeupReason",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_SystemWakeUpReasonEnum"
+},
+"0x0091": {
+"component": "Battery",
+"factor": 10,
+"kind": "uint",
+"name": "remainingEnergyForRider",
+"readable": true
+},
+"0x0092": {
+"component": "Battery",
+"factor": 10,
+"kind": "uint",
+"name": "remainingEnergy",
+"readable": true
+},
+"0x0093": {
+"component": "Battery",
+"factor": 1,
+"kind": "sint",
+"name": "maximumAllowedDischargeCurrent",
+"readable": true
+},
+"0x0094": {
+"component": "Battery",
+"factor": 1,
+"kind": "sint",
+"name": "presentDischargeCurrent",
+"readable": true
+},
+"0x0095": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "remainingChargingTime",
+"readable": true
+},
+"0x0096": {
+"component": "Battery",
+"factor": 10,
+"kind": "uint",
+"name": "numberOfFullChargeCycles",
+"readable": true,
+"unit": "equivalent full cycles"
+},
+"0x0097": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "componentLockConfiguration",
+"readable": true,
+"struct": "ComponentLockConfiguration"
+},
+"0x0098": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "componentLocked",
+"readable": true
+},
+"0x0099": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "componentDeactivationProof",
+"readable": true,
+"struct": "DeactivationProof"
+},
+"0x009a": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "componentDeactivationEnabled",
+"readable": true
+},
+"0x009b": {
+"component": "Battery",
+"factor": 1,
+"kind": "string",
+"name": "productName",
+"readable": true
+},
+"0x009c": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "deliveredWhOverLifetime",
+"readable": true
+},
+"0x009d": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "durationInThermalProtection",
+"readable": true
+},
+"0x009e": {
+"component": "Battery",
+"factor": 10,
+"kind": "uint",
+"name": "lastEndOfChargeVoltage",
+"readable": true
+},
+"0x009f": {
+"component": "Battery",
+"factor": 10,
+"kind": "sint",
+"name": "maximumChargingCurrent",
+"readable": true
+},
+"0x00a0": {
+"component": "Battery",
+"factor": 10,
+"kind": "sint",
+"name": "maximumPackTemperature",
+"readable": true
+},
+"0x00a1": {
+"component": "Battery",
+"factor": 10,
+"kind": "sint",
+"name": "minimumPackTemperature",
+"readable": true
+},
+"0x00a2": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "soCLowerLimit",
+"readable": true
+},
+"0x00a3": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "soCUpperLimit",
+"readable": true
+},
+"0x00a4": {
+"component": "Battery",
+"factor": 1,
+"kind": "string",
+"name": "manufacturingDate",
+"readable": true
+},
+"0x00a5": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "isSampleSoftware",
+"readable": true
+},
+"0x00a6": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "inSoftwareInstallationState",
+"readable": true
+},
+"0x00a7": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "maximumAllowedReverseCurrent",
+"readable": true
+},
+"0x00a8": {
+"component": "Battery",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandRider",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x00a9": {
+"component": "Battery",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandIbd",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x00aa": {
+"component": "Battery",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandOem",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x00ab": {
+"component": "Battery",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandSp",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x00ac": {
+"component": "Battery",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandBosch",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x00ad": {
+"component": "Battery",
+"factor": 1,
+"kind": "rpc",
+"name": "reportIssue",
+"readable": false,
+"struct": "ReportIssueParameters"
+},
+"0x00ae": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "issueEvent",
+"readable": true,
+"struct": "IssueEvent"
+},
+"0x00af": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "issueVisualizationEvent",
+"readable": true,
+"struct": "IssueVisualizationEvent"
+},
+"0x00b0": {
+"component": "Battery",
+"factor": 10,
+"kind": "uint",
+"name": "numberOfFullChargeCyclesOnBike",
+"readable": true,
+"unit": "equivalent full cycles"
+},
+"0x00b1": {
+"component": "Battery",
+"factor": 10,
+"kind": "uint",
+"name": "numberOfFullChargeCyclesOffBike",
+"readable": true,
+"unit": "equivalent full cycles"
+},
+"0x00b4": {
+"component": "Battery",
+"factor": 10,
+"kind": "uint",
+"name": "totalEnergy",
+"readable": true,
+"unit": "Wh"
+},
+"0x00b6": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "lightReserveState",
+"readable": true
+},
+"0x00b7": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "timeInBalancing",
+"readable": true
+},
+"0x00b8": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "enableLedTestMode",
+"readable": false
+},
+"0x00b9": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "ledTestPatternOn",
+"readable": true
+},
+"0x00ba": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "enableButtonTestMode",
+"readable": false
+},
+"0x00bb": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "buttonPressed",
+"readable": true
+},
+"0x00bc": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "systemStateOfChargeForRider",
+"readable": true
+},
+"0x00bd": {
+"component": "Battery",
+"factor": 1,
+"kind": "string",
+"name": "dataModelVersion",
+"readable": true
+},
+"0x00be": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "featurePropertiesRelease1",
+"readable": true,
+"struct": "BatteryFeaturePropertiesRelease1"
+},
+"0x00bf": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "serviceChargeState",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_ServiceChargeStateEnum"
+},
+"0x00c0": {
+"component": "Battery",
+"factor": 1,
+"kind": "rpc",
+"name": "requestServiceCharge",
+"readable": false
+},
+"0x00c1": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "dischargeDuration",
+"readable": true
+},
+"0x00c2": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "featurePropertiesRelease4",
+"readable": true,
+"struct": "BatteryFeaturePropertiesRelease4"
+},
+"0x00c3": {
+"component": "Battery",
+"factor": 1,
+"kind": "rpc",
+"name": "preventShutdown",
+"readable": false
+},
+"0x00c4": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "instanceChargingActive",
+"readable": true
+},
+"0x00c5": {
+"component": "Battery",
+"factor": 10,
+"kind": "uint",
+"name": "instanceRemainingEnergyForRider",
+"readable": true
+},
+"0x00c6": {
+"component": "Battery",
+"factor": 1,
+"kind": "sint",
+"name": "instanceMaximumAllowedDischargeCurrent",
+"readable": true
+},
+"0x00c7": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "instanceMaximumAllowedReverseCurrent",
+"readable": true
+},
+"0x00c8": {
+"component": "Battery",
+"factor": 1,
+"kind": "sint",
+"name": "instancePresentDischargeCurrent",
+"readable": true
+},
+"0x00c9": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "instanceLightReserveState",
+"readable": true
+},
+"0x00ca": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "instanceStateOfChargeForRider",
+"readable": true
+},
+"0x00cb": {
+"component": "Battery",
+"factor": 1,
+"kind": "sint",
+"name": "instanceMaximumAllowedChargeCurrent",
+"readable": true
+},
+"0x00cc": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint[]",
+"name": "allIssueVisualizationEvents",
+"readable": true
+},
+"0x00cd": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "batteryStaticFeatureProperties",
+"readable": true,
+"struct": "BatteryStaticFeatureProperties"
+},
+"0x00ce": {
+"component": "Battery",
+"factor": 1,
+"kind": "string",
+"name": "easterEgg",
+"readable": true
+},
+"0x00d0": {
+"component": "Battery",
+"factor": 1,
+"kind": "bool",
+"name": "dualBatteryMode",
+"readable": true
+},
+"0x00d1": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "shutdownState",
+"readable": true,
+"struct": "BatteryShutdownInfo"
+},
+"0x00d2": {
+"component": "Battery",
+"factor": 10,
+"kind": "sint",
+"name": "presentFetTemperature",
+"readable": true
+},
+"0x00d3": {
+"component": "Battery",
+"factor": 1,
+"kind": "rpc",
+"name": "getTimeUntilDerating",
+"readable": false
+},
+"0x00d5": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "continuousPackPower",
+"readable": true
+},
+"0x00d7": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "deliveredAhOverLifetime",
+"readable": true
+},
+"0x00d8": {
+"component": "Battery",
+"factor": 1,
+"kind": "uint",
+"name": "stateOfHealth",
+"readable": true
+},
+"0x00d9": {
+"component": "Battery",
+"factor": 10,
+"kind": "uint",
+"name": "systemTotalEnergyForRider",
+"readable": true,
+"unit": "Wh"
+},
+"0x00da": {
+"component": "Battery",
+"factor": 10,
+"kind": "uint",
+"name": "instanceEnergyReserve",
+"readable": true
+},
+"0x00db": {
+"component": "Battery",
+"factor": 1,
+"kind": "rpc",
+"name": "unlockComponent",
+"readable": false,
+"struct": "UnlockTokenContainer"
+},
+"0x00dc": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "selfDischargingRate",
+"readable": true,
+"struct": "Uint8NullableNormFactor10"
+},
+"0x00dd": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "lockAccessCertificateChain",
+"readable": false,
+"struct": "ComponentLockCertificateChain"
+},
+"0x00e0": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "deviceCertificate",
+"readable": true
+},
+"0x00e1": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "harmfulEvents",
+"readable": true,
+"struct": "HarmfulEvents"
+},
+"0x00e2": {
+"component": "Battery",
+"factor": 100,
+"kind": "uint",
+"name": "totalCapacity",
+"readable": true,
+"unit": "Ah"
+},
+"0x00e3": {
+"component": "Battery",
+"factor": 1,
+"kind": "string",
+"name": "bootmanagerSoftwareVersion",
+"readable": true
+},
+"0x00e4": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "chargingInformation",
+"readable": true,
+"struct": "ChargingInformation"
+},
+"0x00e5": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "chargingSettings",
+"readable": true,
+"struct": "ChargingSettings"
+},
+"0x00e6": {
+"component": "Battery",
+"factor": 1,
+"kind": "rpc",
+"name": "resetSettings",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_ResetSettingsParamsEnum"
+},
+"0x00e7": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "oemComponentLockEnable",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_OemComponentLockConfigurationEnum"
+},
+"0x00e8": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "genericParameterData",
+"readable": true,
+"struct": "GenericParameterData"
+},
+"0x00e9": {
+"component": "Battery",
+"factor": 1,
+"kind": "rpc",
+"name": "prepareSecurityLogFile",
+"readable": false
+},
+"0x00ea": {
+"component": "Battery",
+"factor": 1,
+"kind": "struct",
+"name": "repairModeEnabled",
+"readable": true,
+"struct": "RepairModeData"
+},
+"0x0200": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "void",
+"name": "virtualPlaceholderGateway",
+"readable": false
+},
+"0x0281": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "string",
+"name": "serialNumber",
+"readable": true
+},
+"0x0282": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "string",
+"name": "partNumber",
+"readable": true
+},
+"0x0283": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "string",
+"name": "productCode",
+"readable": true
+},
+"0x0284": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "string",
+"name": "hardwareVersion",
+"readable": true
+},
+"0x0285": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "string",
+"name": "hardwareSoftwareVersion",
+"readable": true
+},
+"0x0286": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "string",
+"name": "softwareVersion",
+"readable": true
+},
+"0x0287": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "string",
+"name": "bootloaderSoftwareVersion",
+"readable": true
+},
+"0x0288": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "uint",
+"name": "stateOfCharge",
+"readable": true
+},
+"0x028b": {
+"component": "Battery_2",
+"factor": 10,
+"kind": "sint",
+"name": "presentPackTemperature",
+"readable": true
+},
+"0x028c": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "uint",
+"name": "presentBatteryVoltage",
+"readable": true
+},
+"0x0292": {
+"component": "Battery_2",
+"factor": 10,
+"kind": "uint",
+"name": "remainingEnergy",
+"readable": true
+},
+"0x0296": {
+"component": "Battery_2",
+"factor": 10,
+"kind": "uint",
+"name": "numberOfFullChargeCycles",
+"readable": true
+},
+"0x0297": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "componentLockConfiguration",
+"readable": true,
+"struct": "ComponentLockConfiguration"
+},
+"0x0298": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "bool",
+"name": "componentLocked",
+"readable": true
+},
+"0x0299": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "componentDeactivationProof",
+"readable": true,
+"struct": "DeactivationProof"
+},
+"0x029a": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "bool",
+"name": "componentDeactivationEnabled",
+"readable": true
+},
+"0x029b": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "string",
+"name": "productName",
+"readable": true
+},
+"0x029c": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "uint",
+"name": "deliveredWhOverLifetime",
+"readable": true
+},
+"0x029d": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "uint",
+"name": "durationInThermalProtection",
+"readable": true
+},
+"0x029e": {
+"component": "Battery_2",
+"factor": 10,
+"kind": "uint",
+"name": "lastEndOfChargeVoltage",
+"readable": true
+},
+"0x029f": {
+"component": "Battery_2",
+"factor": 10,
+"kind": "sint",
+"name": "maximumChargingCurrent",
+"readable": true
+},
+"0x02a0": {
+"component": "Battery_2",
+"factor": 10,
+"kind": "sint",
+"name": "maximumPackTemperature",
+"readable": true
+},
+"0x02a1": {
+"component": "Battery_2",
+"factor": 10,
+"kind": "sint",
+"name": "minimumPackTemperature",
+"readable": true
+},
+"0x02a2": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "uint",
+"name": "soCLowerLimit",
+"readable": true
+},
+"0x02a3": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "uint",
+"name": "soCUpperLimit",
+"readable": true
+},
+"0x02a4": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "string",
+"name": "manufacturingDate",
+"readable": true
+},
+"0x02a5": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "bool",
+"name": "isSampleSoftware",
+"readable": true
+},
+"0x02a6": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "bool",
+"name": "inSoftwareInstallationState",
+"readable": true
+},
+"0x02a8": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandRider",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x02a9": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandIbd",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x02aa": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandOem",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x02ab": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandSp",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x02ac": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandBosch",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x02ad": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "rpc",
+"name": "reportIssue",
+"readable": false,
+"struct": "ReportIssueParameters"
+},
+"0x02ae": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "issueEvent",
+"readable": true,
+"struct": "IssueEvent"
+},
+"0x02af": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "issueVisualizationEvent",
+"readable": true,
+"struct": "IssueVisualizationEvent"
+},
+"0x02b0": {
+"component": "Battery_2",
+"factor": 10,
+"kind": "uint",
+"name": "numberOfFullChargeCyclesOnBike",
+"readable": true
+},
+"0x02b1": {
+"component": "Battery_2",
+"factor": 10,
+"kind": "uint",
+"name": "numberOfFullChargeCyclesOffBike",
+"readable": true
+},
+"0x02b4": {
+"component": "Battery_2",
+"factor": 10,
+"kind": "uint",
+"name": "totalEnergy",
+"readable": true
+},
+"0x02b7": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "bool",
+"name": "timeInBalancing",
+"readable": true
+},
+"0x02b8": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "bool",
+"name": "enableLedTestMode",
+"readable": false
+},
+"0x02b9": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "bool",
+"name": "ledTestPatternOn",
+"readable": true
+},
+"0x02ba": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "bool",
+"name": "enableButtonTestMode",
+"readable": false
+},
+"0x02bb": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "bool",
+"name": "buttonPressed",
+"readable": true
+},
+"0x02bd": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "string",
+"name": "dataModelVersion",
+"readable": true
+},
+"0x02be": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "featurePropertiesRelease1",
+"readable": true,
+"struct": "BatteryFeaturePropertiesRelease1"
+},
+"0x02bf": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "serviceChargeState",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_ServiceChargeStateEnum"
+},
+"0x02c1": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "uint",
+"name": "dischargeDuration",
+"readable": true
+},
+"0x02c2": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "featurePropertiesRelease4",
+"readable": true,
+"struct": "BatteryFeaturePropertiesRelease4"
+},
+"0x02c4": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "bool",
+"name": "instanceChargingActive",
+"readable": true
+},
+"0x02c5": {
+"component": "Battery_2",
+"factor": 10,
+"kind": "uint",
+"name": "instanceRemainingEnergyForRider",
+"readable": true
+},
+"0x02c6": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "sint",
+"name": "instanceMaximumAllowedDischargeCurrent",
+"readable": true
+},
+"0x02c7": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "uint",
+"name": "instanceMaximumAllowedReverseCurrent",
+"readable": true
+},
+"0x02c8": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "sint",
+"name": "instancePresentDischargeCurrent",
+"readable": true
+},
+"0x02c9": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "bool",
+"name": "instanceLightReserveState",
+"readable": true
+},
+"0x02ca": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "uint",
+"name": "instanceStateOfChargeForRider",
+"readable": true
+},
+"0x02cb": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "sint",
+"name": "instanceMaximumAllowedChargeCurrent",
+"readable": true
+},
+"0x02cc": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "uint[]",
+"name": "allIssueVisualizationEvents",
+"readable": true
+},
+"0x02cd": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "batteryStaticFeatureProperties",
+"readable": true,
+"struct": "BatteryStaticFeatureProperties"
+},
+"0x02ce": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "string",
+"name": "easterEgg",
+"readable": true
+},
+"0x02d0": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "bool",
+"name": "dualBatteryMode",
+"readable": true
+},
+"0x02d2": {
+"component": "Battery_2",
+"factor": 10,
+"kind": "sint",
+"name": "presentFetTemperature",
+"readable": true
+},
+"0x02d7": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "uint",
+"name": "deliveredAhOverLifetime",
+"readable": true
+},
+"0x02d8": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "uint",
+"name": "stateOfHealth",
+"readable": true
+},
+"0x02da": {
+"component": "Battery_2",
+"factor": 10,
+"kind": "uint",
+"name": "instanceEnergyReserve",
+"readable": true
+},
+"0x02db": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "rpc",
+"name": "unlockComponent",
+"readable": false,
+"struct": "UnlockTokenContainer"
+},
+"0x02dc": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "selfDischargingRate",
+"readable": true,
+"struct": "Uint8NullableNormFactor10"
+},
+"0x02dd": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "lockAccessCertificateChain",
+"readable": false,
+"struct": "ComponentLockCertificateChain"
+},
+"0x02e0": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "deviceCertificate",
+"readable": true
+},
+"0x02e1": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "harmfulEvents",
+"readable": true,
+"struct": "HarmfulEvents"
+},
+"0x02e2": {
+"component": "Battery_2",
+"factor": 100,
+"kind": "uint",
+"name": "totalCapacity",
+"readable": true
+},
+"0x02e3": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "string",
+"name": "bootmanagerSoftwareVersion",
+"readable": true
+},
+"0x02e5": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "chargingSettings",
+"readable": true,
+"struct": "ChargingSettings"
+},
+"0x02e6": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "rpc",
+"name": "resetSettings",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_ResetSettingsParamsEnum"
+},
+"0x02e7": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "oemComponentLockEnable",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_OemComponentLockConfigurationEnum"
+},
+"0x02e8": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "genericParameterData",
+"readable": true,
+"struct": "GenericParameterData"
+},
+"0x02e9": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "rpc",
+"name": "prepareSecurityLogFile",
+"readable": false
+},
+"0x02ea": {
+"component": "Battery_2",
+"factor": 1,
+"kind": "struct",
+"name": "repairModeEnabled",
+"readable": true,
+"struct": "RepairModeData"
+},
+"0x0900": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "void",
+"name": "singleGateway",
+"readable": false
+},
+"0x0901": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "string",
+"name": "serialNumber",
+"readable": true
+},
+"0x0902": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "string",
+"name": "partNumber",
+"readable": true
+},
+"0x0903": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "string",
+"name": "productCode",
+"readable": true
+},
+"0x0904": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "string",
+"name": "hardwareVersion",
+"readable": true
+},
+"0x0905": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "string",
+"name": "hardwareSoftwareVersion",
+"readable": true
+},
+"0x0906": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "string",
+"name": "softwareVersion",
+"readable": true
+},
+"0x0907": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "string",
+"name": "bootloaderSoftwareVersion",
+"readable": true
+},
+"0x0908": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "signalLampControl",
+"readable": true,
+"struct": "SignalLampControl"
+},
+"0x0909": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "string",
+"name": "absMode",
+"readable": true
+},
+"0x090a": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "string[]",
+"name": "availableAbsModes",
+"readable": true
+},
+"0x090b": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "bool",
+"name": "inSoftwareInstallationState",
+"readable": true
+},
+"0x090c": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "bool",
+"name": "isTwoChannelSystem",
+"readable": true
+},
+"0x090d": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "bool",
+"name": "isSampleSoftware",
+"readable": true
+},
+"0x090e": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "bool",
+"name": "isSampleHardware",
+"readable": true
+},
+"0x090f": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "string",
+"name": "productName",
+"readable": true
+},
+"0x0910": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "string",
+"name": "manufacturingDate",
+"readable": true
+},
+"0x0911": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "bool",
+"name": "componentLocked",
+"readable": true
+},
+"0x0912": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "componentLockConfiguration",
+"readable": true,
+"struct": "ComponentLockConfiguration"
+},
+"0x0913": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "antiLockBrakeSystemFeaturePropertiesRelease3",
+"readable": true,
+"struct": "AntiLockBrakeSystemFeaturePropertiesRelease3"
+},
+"0x0914": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "uint",
+"name": "numberOfSoftwareUpdates",
+"readable": true
+},
+"0x0915": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "bool",
+"name": "absReleasedAfterAssembly",
+"readable": true
+},
+"0x0916": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "rearWheelSpeedSensorAssemblyTestResult",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_TestResultEnum"
+},
+"0x0917": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "frontWheelSpeedSensorAssemblyTestResult",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_TestResultEnum"
+},
+"0x0918": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "absCalibrationType",
+"readable": true,
+"struct": "SafeShortString"
+},
+"0x0919": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "bool",
+"name": "isEndOfLineTested",
+"readable": true
+},
+"0x091a": {
+"component": "AntiLockBrakeSystem",
+"factor": 10,
+"kind": "uint",
+"name": "frontWheelCircumference",
+"readable": true
+},
+"0x091b": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "frontBrakeFoundation",
+"readable": true,
+"struct": "SafeShortString"
+},
+"0x091c": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "frontBrakeDiscSize",
+"readable": true,
+"struct": "SafeUint16"
+},
+"0x091d": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "issueVisualizationEvent",
+"readable": true,
+"struct": "IssueVisualizationEvent"
+},
+"0x091e": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "bool",
+"name": "overallAssemblyTestResult",
+"readable": true
+},
+"0x091f": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "issueEvent",
+"readable": true,
+"struct": "IssueEvent"
+},
+"0x0920": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandRider",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0921": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandIbd",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0922": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandOem",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0923": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandSp",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0924": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandBosch",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0925": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "frontWheelSpeed",
+"readable": true,
+"struct": "WheelSpeedWithValidity"
+},
+"0x0926": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "string",
+"name": "dataModelVersion",
+"readable": true
+},
+"0x0927": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "rearWheelSpeed",
+"readable": true,
+"struct": "WheelSpeedWithValidity"
+},
+"0x0928": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "rpc",
+"name": "triggerFrontWheelSpeedSensorAssemblyTest",
+"readable": false
+},
+"0x0929": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "rpc",
+"name": "triggerRearWheelSpeedSensorAssemblyTest",
+"readable": false
+},
+"0x092a": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "bool",
+"name": "wheelSpeedSensorAssemblyTestResult",
+"readable": true
+},
+"0x092b": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "rpc",
+"name": "resetWheelSpeedSensorAssemblyTestResult",
+"readable": false
+},
+"0x092c": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "brakeHoseLengthFromMasterCylinderToFrontAntiLockBrakeSystem",
+"readable": true,
+"struct": "SafeUint16"
+},
+"0x092d": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "brakeHoseLengthFromFrontAntiLockBrakeSystemToWheelCaliper",
+"readable": true,
+"struct": "SafeUint16"
+},
+"0x092f": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "uint",
+"name": "brakeDurationOfLastBrakeEvent",
+"readable": true
+},
+"0x0930": {
+"component": "AntiLockBrakeSystem",
+"factor": 10,
+"kind": "uint",
+"name": "brakeDistanceOfLastBrakeEvent",
+"readable": true
+},
+"0x0931": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "string",
+"name": "bootmanagerSoftwareVersion",
+"readable": true
+},
+"0x0932": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "string",
+"name": "easterEgg",
+"readable": true
+},
+"0x0933": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "antiLockBrakeSystemFeaturePropertiesRelease4",
+"readable": true,
+"struct": "AntiLockBrakeSystemFeaturePropertiesRelease4"
+},
+"0x0934": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "uint[]",
+"name": "allIssueVisualizationEvents",
+"readable": true
+},
+"0x0935": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "antiLockBrakeSystemStaticFeatureProperties",
+"readable": true,
+"struct": "AntiLockBrakeSystemStaticFeatureProperties"
+},
+"0x0936": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "antiLockBrakeSystemEvent",
+"readable": true,
+"struct": "AntiLockBrakeSystemEvent"
+},
+"0x0937": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "bool",
+"name": "useInertialMeasurementUnit",
+"readable": true
+},
+"0x0938": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "rpc",
+"name": "unlockComponent",
+"readable": false,
+"struct": "UnlockTokenContainer"
+},
+"0x0939": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "rpc",
+"name": "reportIssue",
+"readable": false,
+"struct": "ReportIssueParameters"
+},
+"0x093a": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "struct",
+"name": "bikeCategoryConfiguration",
+"readable": true,
+"struct": "BikeCategoryConfiguration"
+},
+"0x093b": {
+"component": "AntiLockBrakeSystem",
+"factor": 1,
+"kind": "rpc",
+"name": "prepareSecurityLogFile",
+"readable": false
+},
+"0x0a10": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "void",
+"name": "bcmInformationManagerGateway",
+"readable": false
+},
+"0x0a11": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "rpc",
+"name": "reportIssue",
+"readable": false,
+"struct": "ReportIssueParameters"
+},
+"0x0a12": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "issueEvent",
+"readable": true,
+"struct": "IssueEvent"
+},
+"0x0a13": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "issueVisualizationEvent",
+"readable": true,
+"struct": "IssueVisualizationEvent"
+},
+"0x0a14": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandIbd",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0a15": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandOem",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0a16": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandSp",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0a17": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandBosch",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0a18": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandRider",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0a19": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "uint[]",
+"name": "allIssueVisualizationEvents",
+"readable": true
+},
+"0x0b00": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "void",
+"name": "bcmMainGateway",
+"readable": false
+},
+"0x0b01": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "serialNumber",
+"readable": true
+},
+"0x0b02": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "partNumber",
+"readable": true
+},
+"0x0b03": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "hardwareVersion",
+"readable": true
+},
+"0x0b04": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "hardwareSoftwareVersion",
+"readable": true
+},
+"0x0b05": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "productCode",
+"readable": true
+},
+"0x0b06": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "manufacturingDate",
+"readable": true
+},
+"0x0b07": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "productionPlantCode",
+"readable": true
+},
+"0x0b08": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "productionLine",
+"readable": true
+},
+"0x0b09": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "dataModelVersion",
+"readable": true
+},
+"0x0b0b": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "softwareVersion",
+"readable": true
+},
+"0x0b0c": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "gitInformation",
+"readable": true,
+"struct": "GitInformation"
+},
+"0x0b0d": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "buildInformation",
+"readable": true,
+"struct": "BuildInformation"
+},
+"0x0b11": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "bootloaderSoftwareVersion",
+"readable": true
+},
+"0x0b13": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "productName",
+"readable": true
+},
+"0x0b18": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "transportationModeConfiguration",
+"readable": true,
+"struct": "TransportationModeConfiguration"
+},
+"0x0b19": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "uint",
+"name": "batteryVoltage",
+"readable": true
+},
+"0x0b20": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "easterEgg",
+"readable": true
+},
+"0x0b21": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "bool",
+"name": "componentLocked",
+"readable": true
+},
+"0x0b22": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "componentLockConfiguration",
+"readable": true,
+"struct": "ComponentLockConfiguration"
+},
+"0x0b25": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "bool",
+"name": "inSoftwareInstallationState",
+"readable": true
+},
+"0x0b27": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "rpc",
+"name": "activate",
+"readable": false
+},
+"0x0b28": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "rpc",
+"name": "sendConnectionAcknowledgeToBackend",
+"readable": false
+},
+"0x0b29": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "alarmFeatureEnabledConfiguration",
+"readable": true,
+"struct": "AlarmFeatureEnabledConfiguration"
+},
+"0x0b2a": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "alarmFeatureSettings",
+"readable": true,
+"struct": "BcmAlarmFeatureSettings"
+},
+"0x0b2b": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "bootmanagerSoftwareVersion",
+"readable": true
+},
+"0x0b2c": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "batteryStatus",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_BatteryStatusEnum"
+},
+"0x0b2d": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "sint",
+"name": "latestGnssTimestamp",
+"readable": true
+},
+"0x0b2e": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "bool",
+"name": "isSampleSoftware",
+"readable": true
+},
+"0x0b2f": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "bool",
+"name": "shippingMode",
+"readable": true
+},
+"0x0b30": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "rpc",
+"name": "disableTransportationMode",
+"readable": false
+},
+"0x0b31": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "modemFirmwareVersion",
+"readable": true
+},
+"0x0b32": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "batteryChargingStatus",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_BatteryChargingStatusEnum"
+},
+"0x0b33": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "connectModuleFeaturePropertiesRelease4",
+"readable": true,
+"struct": "ConnectModuleFeaturePropertiesRelease4"
+},
+"0x0b35": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "connectModuleStaticFeatureProperties",
+"readable": true,
+"struct": "ConnectModuleStaticFeatureProperties"
+},
+"0x0b36": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "backendEnvironment",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_BackendEnvironmentEnum"
+},
+"0x0b37": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string",
+"name": "debugComponentState",
+"readable": true
+},
+"0x0b38": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "rpc",
+"name": "fetchRemoteConfiguration",
+"readable": false
+},
+"0x0b39": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "remoteConfigurationSettings",
+"readable": true,
+"struct": "RemoteConfigurationSettings"
+},
+"0x0b3b": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "rpc",
+"name": "unlockComponent",
+"readable": false,
+"struct": "UnlockTokenContainer"
+},
+"0x0b3c": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "struct",
+"name": "remoteConfigurationData",
+"readable": true,
+"struct": "RemoteConfigurationData"
+},
+"0x0b3d": {
+"component": "ConnectModule",
+"factor": 1,
+"kind": "string[]",
+"name": "enabledFeatures",
+"readable": false
+},
+"0x0c10": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "void",
+"name": "informationManagerGateway",
+"readable": false
+},
+"0x0c11": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "reportIssue",
+"readable": false,
+"struct": "ReportIssueParameters"
+},
+"0x0c12": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "issueEvent",
+"readable": true,
+"struct": "IssueEvent"
+},
+"0x0c13": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "issueVisualizationEvent",
+"readable": true,
+"struct": "IssueVisualizationEvent"
+},
+"0x0c14": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandIbd",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0c15": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandOem",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0c16": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandSp",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0c17": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandBosch",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0c18": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandRider",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x0c19": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "updateIssueVisualization",
+"readable": false,
+"struct": "IssueVisualizationEvent"
+},
+"0x0c1a": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "visualizableIssueTypes",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_IssueTypeEnum"
+},
+"0x0c1b": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "uint[]",
+"name": "allIssueVisualizationEvents",
+"readable": true
+},
+"0x0d00": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "void",
+"name": "singleGateway",
+"readable": false
+},
+"0x0d01": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "string",
+"name": "serialNumber",
+"readable": true
+},
+"0x0d02": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "string",
+"name": "partNumber",
+"readable": true
+},
+"0x0d03": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "string",
+"name": "productCode",
+"readable": true
+},
+"0x0d04": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "string",
+"name": "hardwareVersion",
+"readable": true
+},
+"0x0d05": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "string",
+"name": "hardwareSoftwareVersion",
+"readable": true
+},
+"0x0d06": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "string",
+"name": "softwareVersion",
+"readable": true
+},
+"0x0d07": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "string",
+"name": "bootloaderSoftwareVersion",
+"readable": true
+},
+"0x0d08": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "string",
+"name": "manufacturingDate",
+"readable": true
+},
+"0x0d09": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "string",
+"name": "productName",
+"readable": true
+},
+"0x0d0a": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "bool",
+"name": "isSampleSoftware",
+"readable": true
+},
+"0x0d0b": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "uint",
+"name": "uiPriority",
+"readable": true
+},
+"0x0d0c": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "string",
+"name": "dataModelVersion",
+"readable": true
+},
+"0x0d0d": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "string",
+"name": "bootmanagerSoftwareVersion",
+"readable": true
+},
+"0x0d0e": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "string",
+"name": "easterEgg",
+"readable": true
+},
+"0x0d10": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "bool",
+"name": "componentLocked",
+"readable": true
+},
+"0x0d11": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "componentLockConfiguration",
+"readable": true,
+"struct": "ComponentLockConfiguration"
+},
+"0x0d12": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "displayBrightnessConfiguration",
+"readable": true,
+"struct": "BrightnessConfiguration"
+},
+"0x0d13": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "string[]",
+"name": "supportedLanguages",
+"readable": true
+},
+"0x0d14": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "bool",
+"name": "inSoftwareInstallationState",
+"readable": true
+},
+"0x0d15": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "headUnitFeaturePropertiesRelease1",
+"readable": true,
+"struct": "HeadUnitFeaturePropertiesRelease1"
+},
+"0x0d16": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "signalLampHashWithAliveCounter",
+"readable": true,
+"struct": "SignalLampHashWithAliveCounter"
+},
+"0x0d17": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "resetInternalValues",
+"readable": false
+},
+"0x0d18": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "statusbarCustomization",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_StatusbarCustomizationEnum"
+},
+"0x0d19": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "headUnitFeaturePropertiesRelease2",
+"readable": true,
+"struct": "HeadUnitFeaturePropertiesRelease2"
+},
+"0x0d1b": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "keyDevice",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_KeyDeviceStatusEnum"
+},
+"0x0d1c": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "setAsKeyDevice",
+"readable": false
+},
+"0x0d1d": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "headUnitFeaturePropertiesRelease3",
+"readable": true,
+"struct": "HeadUnitFeaturePropertiesRelease3"
+},
+"0x0d1e": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "headUnitFeaturePropertiesRelease4",
+"readable": true,
+"struct": "HeadUnitFeaturePropertiesRelease4"
+},
+"0x0d1f": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "uint",
+"name": "unlockTokensNonce",
+"readable": false
+},
+"0x0d20": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "viewStripeCapabilities",
+"readable": true,
+"struct": "FeatureStreamingCapabilities"
+},
+"0x0d21": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "uint",
+"name": "viewStripeConfigurationId",
+"readable": true
+},
+"0x0d22": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "uint[]",
+"name": "viewStripeConfiguration",
+"readable": true
+},
+"0x0d23": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "uint[]",
+"name": "featureStreamingTilesOfInterest",
+"readable": true
+},
+"0x0d24": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "featureStreamingTile",
+"readable": true,
+"struct": "FeatureStreamingTile"
+},
+"0x0d25": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "featureStreamingTilePlaceholder",
+"readable": true,
+"struct": "FeatureStreamingTilePlaceholder"
+},
+"0x0d26": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "featureStreamingOptionGroup",
+"readable": true,
+"struct": "FeatureStreamingOptionGroup"
+},
+"0x0d27": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "getCategoryConfiguration",
+"readable": false
+},
+"0x0d28": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "setCategoryConfiguration",
+"readable": false,
+"struct": "CategoryConfiguration"
+},
+"0x0d29": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "showViewStripeConfiguration",
+"readable": false
+},
+"0x0d2a": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "storeViewStripeConfiguration",
+"readable": false
+},
+"0x0d2b": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "setTileContent",
+"readable": false,
+"struct": "FeatureStreamingTileData"
+},
+"0x0d2c": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "featureStreamingCapabilities",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_FeatureStreamingKindEnum"
+},
+"0x0d2d": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "playSound",
+"readable": false,
+"struct": "PlaySound"
+},
+"0x0d2e": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "soundsVolumeLevel",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_SoundsVolumeLevelEnum"
+},
+"0x0d2f": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "uint[]",
+"name": "featureStreamingOptionStripe",
+"readable": true
+},
+"0x0d40": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "buzzer",
+"readable": true,
+"struct": "BuzzerParams"
+},
+"0x0d4a": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "displayGenericText",
+"readable": true,
+"struct": "GenericText"
+},
+"0x0d80": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "uint",
+"name": "debugAmbientLightSensor",
+"readable": true
+},
+"0x0d81": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "uint",
+"name": "debugTemperature",
+"readable": true
+},
+"0x0d82": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "debugTakeScreenshot",
+"readable": false,
+"struct": "ScreenshotConfig"
+},
+"0x0d83": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "debugUiPosition",
+"readable": true,
+"struct": "UiInfoParams"
+},
+"0x0d84": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "headUnitStaticFeatureProperties",
+"readable": true,
+"struct": "HeadUnitStaticFeatureProperties"
+},
+"0x0d85": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "supportedTileIds",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_TileIdEnum"
+},
+"0x0d87": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "lcdTestMode",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_LcdTestModeEnum"
+},
+"0x0d88": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "testUiFeatureProperties",
+"readable": false,
+"struct": "TestUiFeatureProperties"
+},
+"0x0d89": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "unlockComponent",
+"readable": false,
+"struct": "UnlockTokenContainer"
+},
+"0x0d8a": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "struct",
+"name": "supportedTileSizes",
+"readable": true,
+"struct": "TileSize"
+},
+"0x0d8b": {
+"component": "HeadUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "prepareSecurityLogFile",
+"readable": false
+},
+"0x0e10": {
+"component": "BoschDiagnoseApp",
+"factor": 1,
+"kind": "void",
+"name": "internalGateway",
+"readable": false
+},
+"0x0e11": {
+"component": "BoschDiagnoseApp",
+"factor": 1,
+"kind": "string",
+"name": "dataModelVersion",
+"readable": false
+},
+"0x0e12": {
+"component": "BoschDiagnoseApp",
+"factor": 1,
+"kind": "rpc",
+"name": "ccfRebootRequired",
+"readable": false,
+"struct": "CcfRebootRequested"
+},
+"0x0e40": {
+"component": "BoschDiagnoseApp",
+"factor": 1,
+"kind": "void",
+"name": "lbtp",
+"readable": false
+},
+"0x0e41": {
+"component": "BoschDiagnoseApp",
+"factor": 1,
+"kind": "void",
+"name": "softwareUpdateManifests",
+"readable": false
+},
+"0x0e42": {
+"component": "BoschDiagnoseApp",
+"factor": 1,
+"kind": "void",
+"name": "softwareUpdates",
+"readable": false
+},
+"0x0e43": {
+"component": "BoschDiagnoseApp",
+"factor": 1,
+"kind": "void",
+"name": "configurationContainers",
+"readable": false
+},
+"0x0e44": {
+"component": "BoschDiagnoseApp",
+"factor": 1,
+"kind": "void",
+"name": "resourceMetadata",
+"readable": false
+},
+"0x0e45": {
+"component": "BoschDiagnoseApp",
+"factor": 1,
+"kind": "void",
+"name": "collectedDataSetResource",
+"readable": false
+},
+"0x0e46": {
+"component": "BoschDiagnoseApp",
+"factor": 1,
+"kind": "void",
+"name": "devLogResource",
+"readable": false
+},
+"0x0e47": {
+"component": "BoschDiagnoseApp",
+"factor": 1,
+"kind": "void",
+"name": "statisticResource",
+"readable": false
+},
+"0x0e48": {
+"component": "BoschDiagnoseApp",
+"factor": 1,
+"kind": "void",
+"name": "userDataResource",
+"readable": false
+},
+"0x0e49": {
+"component": "BoschDiagnoseApp",
+"factor": 1,
+"kind": "void",
+"name": "trustedDataPackResource",
+"readable": false
+},
+"0x1000": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "void",
+"name": "virtualPlaceholderGateway",
+"readable": false
+},
+"0x1021": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "remoteControlAvailable",
+"readable": true
+},
+"0x1022": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "battery1Available",
+"readable": true
+},
+"0x1023": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "battery1InBootloaderAvailable",
+"readable": true
+},
+"0x1024": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "headUnitAvailable",
+"readable": true
+},
+"0x1025": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "headUnitInBootloaderAvailable",
+"readable": true
+},
+"0x1026": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "connectModuleAvailable",
+"readable": true
+},
+"0x1027": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "connectModuleInBootloaderAvailable",
+"readable": true
+},
+"0x1028": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "antiLockBrakeSystemAvailable",
+"readable": true
+},
+"0x1029": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "antiLockBrakeSystemInBootloaderAvailable",
+"readable": true
+},
+"0x102a": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "battery2Available",
+"readable": true
+},
+"0x102b": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "battery2InBootloaderAvailable",
+"readable": true
+},
+"0x1081": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandRider",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x1082": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandIbd",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x1083": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandOem",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x1084": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandSp",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x1085": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandBosch",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x1088": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "reportIssue",
+"readable": false,
+"struct": "ReportIssueParameters"
+},
+"0x1089": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "issueEvent",
+"readable": true,
+"struct": "IssueEvent"
+},
+"0x108a": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "issueVisualizationEvent",
+"readable": true,
+"struct": "IssueVisualizationEvent"
+},
+"0x108b": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "getAssistModeInformation",
+"readable": false
+},
+"0x108c": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "getAssistModeStatistics",
+"readable": false
+},
+"0x108d": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "resetRideStatistics",
+"readable": false
+},
+"0x108e": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "resetRangeCalculation",
+"readable": false
+},
+"0x1090": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "readUdamValues",
+"readable": false
+},
+"0x1091": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "readUdamDefaultValues",
+"readable": false
+},
+"0x1092": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "readUdamLimits",
+"readable": false
+},
+"0x1093": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "setUdamValuesParameters",
+"readable": false,
+"struct": "SetUdamValuesParameters"
+},
+"0x1094": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "resetUdamValues",
+"readable": false
+},
+"0x1095": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "assistModeStrength",
+"readable": false
+},
+"0x1096": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "assistModeIsOemAdjustable",
+"readable": false
+},
+"0x1097": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "resetAllUdamValues",
+"readable": false
+},
+"0x1098": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "resetRearWheelCircumferenceUser",
+"readable": false
+},
+"0x1099": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "playSound",
+"readable": false,
+"struct": "SoundRequest"
+},
+"0x109a": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint[]",
+"name": "allIssueVisualizationEvents",
+"readable": true
+},
+"0x109b": {
+"component": "DriveUnit",
+"factor": 10,
+"kind": "rpc",
+"name": "getTimeUntilDerating",
+"readable": false
+},
+"0x109c": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "limitAssistanceForPowerCycle",
+"readable": false,
+"struct": "AssistanceLimitation"
+},
+"0x109d": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "resetActiveAssistModesToDefault",
+"readable": false
+},
+"0x109e": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "resetGearRatios",
+"readable": false
+},
+"0x10a1": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "currentMountingAngleAtStandstill",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_MountingAngleTestSensorEnum"
+},
+"0x10a2": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "rimMagnetTestTrigger",
+"readable": false,
+"struct": "RimMagnetTestTriggerInputValue"
+},
+"0x10a3": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "resetRiderContext",
+"readable": false,
+"struct": "ResetRiderContextFeatures"
+},
+"0x10a4": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "rotorPositionCalibrationStart",
+"readable": false
+},
+"0x10a5": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "diagnoseHubCable",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_HubCableStateEnum"
+},
+"0x10a6": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "motorActuationOemEolTest",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_MotorActuationTypeEnum"
+},
+"0x10a7": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "resetAdaptiveAutomatic",
+"readable": false
+},
+"0x1801": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "serialNumber",
+"readable": true
+},
+"0x1802": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "partNumber",
+"readable": true
+},
+"0x1803": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "productCode",
+"readable": true
+},
+"0x1804": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "hardwareVersion",
+"readable": true
+},
+"0x1805": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "hardwareSoftwareVersion",
+"readable": true
+},
+"0x1806": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "softwareVersion",
+"readable": true
+},
+"0x1807": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "bootloaderSoftwareVersion",
+"readable": true
+},
+"0x1808": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "bikeSpeed",
+"readable": true,
+"struct": "BikeSpeedWithValidity"
+},
+"0x1809": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "assistMode",
+"readable": true
+},
+"0x180a": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "assistModeUp",
+"readable": false
+},
+"0x180b": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "assistModeDown",
+"readable": false
+},
+"0x180c": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string[]",
+"name": "assistModeShortNames",
+"readable": true
+},
+"0x180d": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string[]",
+"name": "assistModeLongNames",
+"readable": true
+},
+"0x180e": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint[]",
+"name": "assistModeColors",
+"readable": true
+},
+"0x180f": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "availableAssistModesUpper",
+"readable": true,
+"struct": "ApplicationIdentifier"
+},
+"0x1810": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "dataModelVersion",
+"readable": true
+},
+"0x1811": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "distractedRidingAlert",
+"readable": true
+},
+"0x1812": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "driveUnitFeaturePropertiesRelease1",
+"readable": true,
+"struct": "DriveUnitFeaturePropertiesRelease1"
+},
+"0x1813": {
+"component": "DriveUnit",
+"factor": 100,
+"kind": "uint",
+"name": "maximumLegalBikeSpeed",
+"readable": true
+},
+"0x1814": {
+"component": "DriveUnit",
+"factor": 10,
+"kind": "sint",
+"name": "riderTorque",
+"readable": true
+},
+"0x1815": {
+"component": "DriveUnit",
+"factor": 10,
+"kind": "sint",
+"name": "motorTorque",
+"readable": true,
+"unit": "Nm"
+},
+"0x1816": {
+"component": "DriveUnit",
+"factor": 100,
+"kind": "uint",
+"name": "maximumGearRatio",
+"readable": true
+},
+"0x1817": {
+"component": "DriveUnit",
+"factor": 100,
+"kind": "uint",
+"name": "maximumAssistanceSpeed",
+"readable": true
+},
+"0x1818": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "odometer",
+"readable": true
+},
+"0x1819": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "powerOnTime",
+"readable": true,
+"unit": "h"
+},
+"0x181a": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "bikeNotDriving",
+"readable": true
+},
+"0x181b": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "alwaysShowBikeSpeedInDisplay",
+"readable": true
+},
+"0x181c": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "bikeLight",
+"readable": true
+},
+"0x181d": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "sint",
+"name": "roadSlope",
+"readable": true
+},
+"0x181e": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "presentAssistFactor",
+"readable": true
+},
+"0x181f": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "bikeLightConfigurationOem",
+"readable": true,
+"struct": "BikeLightConfigurationOem"
+},
+"0x1820": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "bikeLightAvailable",
+"readable": true
+},
+"0x1821": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "bikeLightConfiguration",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_BikeLightConfigurationEnum"
+},
+"0x1822": {
+"component": "DriveUnit",
+"factor": 10,
+"kind": "uint",
+"name": "bikeLightPower",
+"readable": true
+},
+"0x1823": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "startAssistModeConfigurationOem",
+"readable": false,
+"struct": "StartAssistModeConfigurationOem"
+},
+"0x1824": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "startAssistModeConfiguration",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_StartAssistModePositionEnum"
+},
+"0x1825": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "walkAssistConfigurationOem",
+"readable": true,
+"struct": "WalkAssistConfigurationOem"
+},
+"0x1826": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "walkAssistConfiguration",
+"readable": true,
+"struct": "WalkAssistConfiguration"
+},
+"0x1827": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "productLine",
+"readable": true
+},
+"0x1828": {
+"component": "DriveUnit",
+"factor": 10,
+"kind": "uint",
+"name": "rearWheelCircumferenceOem",
+"readable": true
+},
+"0x1829": {
+"component": "DriveUnit",
+"factor": 10,
+"kind": "uint",
+"name": "rearWheelCircumferenceUser",
+"readable": true
+},
+"0x182a": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "oemBrandIdentifier",
+"readable": true
+},
+"0x182b": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "gearingSystem",
+"readable": true
+},
+"0x182c": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "bikeId",
+"readable": true
+},
+"0x182d": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "displayedBikeSpeed",
+"readable": true,
+"struct": "BikeSpeedWithValidity"
+},
+"0x182e": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "productName",
+"readable": true
+},
+"0x182f": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "rearWheelCircumferenceUserLimits",
+"readable": true,
+"struct": "RearWheelCircumferenceUserLimits"
+},
+"0x1830": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "oemPortConfiguration",
+"readable": true,
+"struct": "OemPortConfiguration"
+},
+"0x1831": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "lowPowerPortActive",
+"readable": true
+},
+"0x1832": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "highPowerPortActive",
+"readable": true
+},
+"0x1833": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "batteryKeyLockNumber",
+"readable": true
+},
+"0x1834": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "componentLocked",
+"readable": true
+},
+"0x1835": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "componentLockConfiguration",
+"readable": true,
+"struct": "ComponentLockConfiguration"
+},
+"0x1836": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "isSampleSoftware",
+"readable": true
+},
+"0x1837": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "manufacturingDate",
+"readable": true
+},
+"0x1838": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "productApplicationRequired",
+"readable": true,
+"struct": "ApplicationIdentifier"
+},
+"0x1839": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "productApplicationAvailable",
+"readable": true,
+"struct": "IdentifierAvailableApplication"
+},
+"0x183a": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "gearshiftApplicationRequired",
+"readable": true,
+"struct": "ApplicationIdentifier"
+},
+"0x183b": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "gearshiftApplicationAvailable",
+"readable": true,
+"struct": "IdentifierAvailableApplication"
+},
+"0x183c": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "regioSpeedApplicationRequired",
+"readable": true,
+"struct": "ApplicationIdentifier"
+},
+"0x183d": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "regioSpeedApplicationAvailable",
+"readable": true,
+"struct": "IdentifierAvailableApplication"
+},
+"0x183e": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "requiredAssistModesUpper",
+"readable": true,
+"struct": "ApplicationIdentifier"
+},
+"0x183f": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "addingAssistModesLocked",
+"readable": true
+},
+"0x1840": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "oemSpeedSourceConfiguration",
+"readable": true,
+"struct": "OemSpeedSourceConfiguration"
+},
+"0x1841": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "speedSource",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_SpeedSourceConfigurationEnum"
+},
+"0x1842": {
+"component": "DriveUnit",
+"factor": 100,
+"kind": "uint",
+"name": "maximumAssistanceSpeedIbd",
+"readable": true
+},
+"0x1843": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "bikeCategoryConfiguration",
+"readable": true,
+"struct": "BikeCategoryConfiguration"
+},
+"0x1844": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "inSoftwareInstallationState",
+"readable": true
+},
+"0x1845": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "speedDisplayTolerance",
+"readable": true
+},
+"0x1846": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "udamModificationPossible",
+"readable": true
+},
+"0x1847": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "lockAccessCertificateChain",
+"readable": false,
+"struct": "ComponentLockCertificateChain"
+},
+"0x1848": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "connectModuleReady",
+"readable": true
+},
+"0x1849": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "rangeExtenderReady",
+"readable": true
+},
+"0x184a": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "totalRidingTimeWithoutStops",
+"readable": true
+},
+"0x184b": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "enteringEnergyReserve",
+"readable": true
+},
+"0x184c": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "productionPlantCode",
+"readable": true
+},
+"0x184d": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "speedManipulationStatus",
+"readable": true,
+"struct": "SpeedManipulationStatus"
+},
+"0x184e": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string[]",
+"name": "activeAssistModes",
+"readable": true
+},
+"0x184f": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "rideStatistics",
+"readable": true,
+"struct": "RideStatistics"
+},
+"0x1850": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "shiftRecommendation",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_ShiftRecommendationEnum"
+},
+"0x1851": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "tuningDetection",
+"readable": true,
+"struct": "TuningDetectionInformation"
+},
+"0x1852": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "motorPowerConfiguration",
+"readable": true,
+"struct": "MotorPowerConfiguration"
+},
+"0x1853": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "motorCutOffDistance",
+"readable": true
+},
+"0x1854": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "frontAntiLockBrakeSystemAssembled",
+"readable": true
+},
+"0x1855": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "bikeCategory",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_BikeCategoryEnum"
+},
+"0x1856": {
+"component": "DriveUnit",
+"factor": 10,
+"kind": "uint",
+"name": "energyReserve",
+"readable": true
+},
+"0x1857": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint[]",
+"name": "reachableRange",
+"readable": true
+},
+"0x1858": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "speedBikeSignalLampRequired",
+"readable": true
+},
+"0x185a": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "sint",
+"name": "riderCadence",
+"readable": true
+},
+"0x185b": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "riderPower",
+"readable": true
+},
+"0x185c": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "sint",
+"name": "motorCadence",
+"readable": true
+},
+"0x185d": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "motorPower",
+"readable": true
+},
+"0x185e": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "oemBikeId",
+"readable": true
+},
+"0x185f": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "oemManufacturingLocation",
+"readable": true
+},
+"0x1860": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "oemManufacturingLine",
+"readable": true
+},
+"0x1861": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "oemManufacturingDate",
+"readable": true
+},
+"0x1862": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "oemFreeTextField",
+"readable": true
+},
+"0x1863": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "triggerAlert",
+"readable": false,
+"struct": "TriggerAlert"
+},
+"0x1864": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "bootmanagerSoftwareVersion",
+"readable": true
+},
+"0x1865": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "bikeNotMoving",
+"readable": true
+},
+"0x1866": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "componentState",
+"readable": true,
+"struct": "ComponentState"
+},
+"0x1867": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "speedRange",
+"readable": true,
+"struct": "SpeedRange"
+},
+"0x1868": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "availableAssistModesLower",
+"readable": true,
+"struct": "ApplicationIdentifier"
+},
+"0x1869": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "requiredAssistModesLower",
+"readable": true,
+"struct": "ApplicationIdentifier"
+},
+"0x186a": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "walkAssistStatus",
+"readable": true,
+"struct": "WalkAssistStatus"
+},
+"0x186b": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "walkAssistControl",
+"readable": false,
+"struct": "WalkAssistControl"
+},
+"0x186c": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "oemBrandName",
+"readable": true
+},
+"0x186d": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "powerOnTimeWithMotorSupport",
+"readable": true,
+"unit": "h"
+},
+"0x186e": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "unlockComponent",
+"readable": false,
+"struct": "UnlockTokenContainer"
+},
+"0x186f": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "soundStatus",
+"readable": true,
+"struct": "SoundStatus"
+},
+"0x1870": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "driveUnitFeaturePropertiesRelease2",
+"readable": true,
+"struct": "DriveUnitFeaturePropertiesRelease2"
+},
+"0x1871": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "driveUnitFeaturePropertiesRelease3",
+"readable": true,
+"struct": "DriveUnitFeaturePropertiesRelease3"
+},
+"0x1872": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "smartphoneAppAvailableInCurrentRegion",
+"readable": true
+},
+"0x1873": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "navigationAvailableInCurrentRegion",
+"readable": true
+},
+"0x1874": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "maximumAvailableMotorPower",
+"readable": true,
+"struct": "MaximumAvailableMotorPower"
+},
+"0x1875": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "oemBikeModelId",
+"readable": true
+},
+"0x1876": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "sint",
+"name": "averageRiderCadence",
+"readable": true
+},
+"0x1877": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "maximumAvailableMotorTorque",
+"readable": true,
+"struct": "MaximumAvailableMotorTorque"
+},
+"0x1878": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "extendedBikeSpeed",
+"readable": true,
+"struct": "ExtendedBikeSpeed"
+},
+"0x1879": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "easterEgg",
+"readable": true
+},
+"0x187a": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "driveUnitFeaturePropertiesRelease4",
+"readable": true,
+"struct": "DriveUnitFeaturePropertiesRelease4"
+},
+"0x187b": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "oemMultiPurposePortConfiguration",
+"readable": true,
+"struct": "OemMultiPurposePortConfiguration"
+},
+"0x187c": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "multiPurposePortStatus",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_MultiPurposePortConfigurationEnum"
+},
+"0x187d": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "regioSpeedConfiguration",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_RegioSpeedConfigurationEnum"
+},
+"0x187e": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "isSpeedPedelec",
+"readable": true
+},
+"0x187f": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "prohibitMotorSupport",
+"readable": true
+},
+"0x1880": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "driveUnitStaticFeatureProperties",
+"readable": true,
+"struct": "DriveUnitStaticFeatureProperties"
+},
+"0x1881": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "motorInteractionRequest",
+"readable": false,
+"struct": "MotorInteraction"
+},
+"0x1882": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint[]",
+"name": "deadCenterPrediction",
+"readable": true
+},
+"0x1883": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "motorSupportActive",
+"readable": true
+},
+"0x1884": {
+"component": "DriveUnit",
+"factor": 10,
+"kind": "sint",
+"name": "presentPcbTemperature",
+"readable": true
+},
+"0x1885": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "limitMaximumMotorPower",
+"readable": true
+},
+"0x1886": {
+"component": "DriveUnit",
+"factor": 10,
+"kind": "sint",
+"name": "limitMaximumMotorTorque",
+"readable": true
+},
+"0x1887": {
+"component": "DriveUnit",
+"factor": 10,
+"kind": "sint",
+"name": "continuousMotorTorque",
+"readable": true
+},
+"0x1888": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "trickDetectionStatus",
+"readable": true,
+"struct": "TrickDetectionStatus"
+},
+"0x1889": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "mountingAngle",
+"readable": true,
+"struct": "MountingAngle"
+},
+"0x188a": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "automaticModeAvailable",
+"readable": true
+},
+"0x188b": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "assistModeLimits",
+"readable": true,
+"struct": "AssistModeLimits"
+},
+"0x188c": {
+"component": "DriveUnit",
+"factor": 5,
+"kind": "uint",
+"name": "maximumConfiguredDischargeCurrent",
+"readable": true
+},
+"0x188d": {
+"component": "DriveUnit",
+"factor": 10,
+"kind": "uint",
+"name": "rearCassetteAngularSpeed",
+"readable": true
+},
+"0x188e": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "walkAssistTip",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_WalkAssistTipEnum"
+},
+"0x188f": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "chainState",
+"readable": true,
+"struct": "ChainState"
+},
+"0x1890": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "motorInteractionConfig",
+"readable": true,
+"struct": "MotorInteractionConfiguration"
+},
+"0x1892": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "speedPredicted",
+"readable": true,
+"struct": "SpeedPredicted"
+},
+"0x1893": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "speedTuningPredicted",
+"readable": true,
+"struct": "SpeedTuningPredicted"
+},
+"0x1894": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "crashDetectionStatus",
+"readable": true,
+"struct": "CrashDetectionStatus"
+},
+"0x1895": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "crashDetectionConfig",
+"readable": true,
+"struct": "CrashDetectionConfig"
+},
+"0x1896": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "oemTorqueLimitation",
+"readable": true,
+"struct": "OemTorqueLimitation"
+},
+"0x1897": {
+"component": "DriveUnit",
+"factor": 10,
+"kind": "uint",
+"name": "reduceInputCurrent",
+"readable": true
+},
+"0x1898": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "rimMagnetTestStatus",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_RimMagnetTestStatusEnum"
+},
+"0x1899": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "oemHubConfigurablePortConfiguration",
+"readable": true,
+"struct": "OemHubConfigurablePortConfiguration"
+},
+"0x189a": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "hubConfigurablePortStatus",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_HubConfigurablePortConfigurationEnum"
+},
+"0x189b": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "oemThrottleConfiguration",
+"readable": true,
+"struct": "OemThrottleConfiguration"
+},
+"0x189c": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "throttleConfiguration",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_ThrottleConfigurationEnum"
+},
+"0x189d": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "odometerMotor",
+"readable": true
+},
+"0x189e": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "string",
+"name": "motorProductCode",
+"readable": true
+},
+"0x189f": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "mountingAngleRoll",
+"readable": true,
+"struct": "MountingAngle"
+},
+"0x18a0": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "rotorPositionCalibrationResult",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_RotorPositionCalibrationResultEnum"
+},
+"0x18a1": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "brakeDetectionStatus",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_BrakeDetectionStatusEnum"
+},
+"0x18a2": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "rpc",
+"name": "resetHubCableDiagnosis",
+"readable": false
+},
+"0x18a3": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "tuningDetectionConfig",
+"readable": true,
+"struct": "TuningDetectionConfig"
+},
+"0x18a4": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "assistModeLimitsV2",
+"readable": true,
+"struct": "AssistModeLimitsV2"
+},
+"0x18a5": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "estimatedMountingAngleInformation",
+"readable": true,
+"struct": "MountingAngleEstimationInformation"
+},
+"0x18a7": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "oemComponentLockEnable",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_OemComponentLockConfigurationEnum"
+},
+"0x18a8": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "frontLightCurrent",
+"readable": true
+},
+"0x18a9": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "backLightCurrent",
+"readable": true
+},
+"0x18aa": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "bool",
+"name": "configLock",
+"readable": true
+},
+"0x18ab": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "gracePeriodConfigLock",
+"readable": true
+},
+"0x18ac": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "lifeTimeStatistics",
+"readable": true,
+"struct": "DriveUnitLifeTimeStatistics"
+},
+"0x18ad": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "oemPowerLimitation",
+"readable": true,
+"struct": "OemPowerLimitation"
+},
+"0x18ae": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "oemBchEquippedConfiguration",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_OemBchEquippedConfigurationEnum"
+},
+"0x18af": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "struct",
+"name": "adaptiveAutomaticEnabled",
+"readable": true
+},
+"0x18b0": {
+"component": "DriveUnit",
+"factor": 1,
+"kind": "uint",
+"name": "adaptiveCadenceSetpoint",
+"readable": true
+},
+"0x2000": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "void",
+"name": "virtualPlaceholderGateway",
+"readable": false
+},
+"0x2011": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "activeUiPriority",
+"readable": true
+},
+"0x2012": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "activeUiComponent",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_UiComponentEnum"
+},
+"0x2021": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "timeZone",
+"readable": true
+},
+"0x2022": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "sint",
+"name": "time",
+"readable": true
+},
+"0x2023": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "sint",
+"name": "localTimeOffset",
+"readable": true
+},
+"0x2024": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "sint",
+"name": "powerCycleSyncTime",
+"readable": true
+},
+"0x2025": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "powerCycleTime",
+"readable": true
+},
+"0x2026": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "resetLastStoredTime",
+"readable": false,
+"struct": "ResetLastStoredTimeParameters"
+},
+"0x2027": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "lastStoredTimeResetNonce",
+"readable": true
+},
+"0x2033": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "shutdownReason",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_ShutdownReasonEnum"
+},
+"0x2034": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "enterBootloader",
+"readable": false
+},
+"0x2036": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "executeFactoryReset",
+"readable": false
+},
+"0x2037": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint[]",
+"name": "cpuLoad",
+"readable": true
+},
+"0x2041": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "availableButtons",
+"readable": true,
+"struct": "Button"
+},
+"0x2042": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "buttonEvent",
+"readable": true,
+"struct": "ButtonEvent"
+},
+"0x2043": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "simulateButtonEvent",
+"readable": false,
+"struct": "ButtonEvent"
+},
+"0x2044": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "buttonEventsEnabled",
+"readable": true
+},
+"0x2045": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "availableButtonDescriptors",
+"readable": true,
+"struct": "ButtonDeviceDescriptor"
+},
+"0x2046": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "pressedButtons",
+"readable": true,
+"struct": "Button"
+},
+"0x2047": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "uiControl",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_UiControlCommandEnum"
+},
+"0x2048": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "requestDynamicUiControl",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_DynamicUiControlStateEnum"
+},
+"0x2049": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "dynamicUiControlState",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_DynamicUiControlStateEnum"
+},
+"0x2051": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "diagnosisProgramActive",
+"readable": true
+},
+"0x2061": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "serialNumber",
+"readable": true
+},
+"0x2062": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "partNumber",
+"readable": true
+},
+"0x2063": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "hardwareVersion",
+"readable": true
+},
+"0x2064": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "hardwareSoftwareVersion",
+"readable": true
+},
+"0x2065": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "productCode",
+"readable": true
+},
+"0x2066": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "manufacturingDate",
+"readable": true
+},
+"0x2067": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "productionPlantCode",
+"readable": true
+},
+"0x2068": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "productionLine",
+"readable": true
+},
+"0x2069": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "rootCertificate",
+"readable": true
+},
+"0x206a": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "easterEgg",
+"readable": true
+},
+"0x206b": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "softwareVersion",
+"readable": true
+},
+"0x206c": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "gitInformation",
+"readable": true,
+"struct": "GitInformation"
+},
+"0x206d": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "buildInformation",
+"readable": true,
+"struct": "BuildInformation"
+},
+"0x206e": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "bootloaderSoftwareVersion",
+"readable": true
+},
+"0x206f": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "productName",
+"readable": true
+},
+"0x2070": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "isSampleSoftware",
+"readable": true
+},
+"0x2071": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "dataModelVersion",
+"readable": true
+},
+"0x2073": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "isSampleHardware",
+"readable": true
+},
+"0x2081": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "driveUnitAvailable",
+"readable": true
+},
+"0x2082": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "driveUnitInBootloaderAvailable",
+"readable": true
+},
+"0x2083": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "battery1Available",
+"readable": true
+},
+"0x2084": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "battery1InBootloaderAvailable",
+"readable": true
+},
+"0x2085": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "headUnitAvailable",
+"readable": true
+},
+"0x2086": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "headUnitInBootloaderAvailable",
+"readable": true
+},
+"0x2087": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "connectModuleAvailable",
+"readable": true
+},
+"0x2088": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "connectModuleInBootloaderAvailable",
+"readable": true
+},
+"0x2089": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "antiLockBrakeSystemAvailable",
+"readable": true
+},
+"0x208a": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "antiLockBrakeSystemInBootloaderAvailable",
+"readable": true
+},
+"0x208c": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "battery2Available",
+"readable": true
+},
+"0x208d": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "battery2InBootloaderAvailable",
+"readable": true
+},
+"0x208e": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "keyExchangePending",
+"readable": true
+},
+"0x2094": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "canTimeSyncEnabled",
+"readable": true
+},
+"0x20a1": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "uiPriority",
+"readable": true
+},
+"0x20a2": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint[]",
+"name": "ledColors",
+"readable": true
+},
+"0x20a3": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "ledTestModeEnabled",
+"readable": true
+},
+"0x20a4": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "signalLampHashWithAliveCounter",
+"readable": true,
+"struct": "SignalLampHashWithAliveCounter"
+},
+"0x20a5": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "welcomePatternFinished",
+"readable": true
+},
+"0x20a6": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "dismissErrorPattern",
+"readable": false
+},
+"0x20a7": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "errorPatternActive",
+"readable": true
+},
+"0x20a8": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "criticalErrorPatternActive",
+"readable": true
+},
+"0x20a9": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "requestPlusMinusButtonControlByActiveUi",
+"readable": false
+},
+"0x20aa": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "plusMinusButtonControlByActiveUi",
+"readable": true
+},
+"0x20ab": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "siLaLedEnabled",
+"readable": true
+},
+"0x20ac": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "visualizableIssueTypes",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_IssueTypeEnum"
+},
+"0x20ad": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "updateIssueVisualization",
+"readable": false,
+"struct": "IssueVisualizationEvent"
+},
+"0x20af": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "lcdTestMode",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_LcdTestModeEnum"
+},
+"0x20b0": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "statusbarCustomization",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_StatusbarCustomizationEnum"
+},
+"0x20b1": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "requestDynamicButtonControlByActiveUi",
+"readable": false,
+"struct": "DynamicButtonControlByActiveUiState"
+},
+"0x20b2": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "dynamicButtonControlByActiveUi",
+"readable": true,
+"struct": "DynamicButtonControlByActiveUiState"
+},
+"0x20b4": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string[]",
+"name": "supportedLanguages",
+"readable": true
+},
+"0x20b5": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "viewStripeCapabilities",
+"readable": true,
+"struct": "FeatureStreamingCapabilities"
+},
+"0x20b6": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "featureStreamingCapabilities",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_FeatureStreamingKindEnum"
+},
+"0x20b7": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint[]",
+"name": "featureStreamingTilesOfInterest",
+"readable": true
+},
+"0x20b8": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "viewStripeConfigurationId",
+"readable": true
+},
+"0x20b9": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint[]",
+"name": "viewStripeConfiguration",
+"readable": true
+},
+"0x20ba": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "getCategoryConfiguration",
+"readable": false
+},
+"0x20bb": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "setCategoryConfiguration",
+"readable": false,
+"struct": "CategoryConfiguration"
+},
+"0x20bc": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "setTileContent",
+"readable": false,
+"struct": "FeatureStreamingTileData"
+},
+"0x20bd": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "showViewStripeConfiguration",
+"readable": false
+},
+"0x20be": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "storeViewStripeConfiguration",
+"readable": false
+},
+"0x20bf": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "debugUiPosition",
+"readable": true,
+"struct": "UiInfoParams"
+},
+"0x20c1": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "downloadConfigurationContainer",
+"readable": false
+},
+"0x20c2": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "cancelConfigurationContainerDownloads",
+"readable": false
+},
+"0x20c3": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "configurationContainerDownloadsFinished",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_DownloadStatusEnum"
+},
+"0x20c4": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "downloadSoftwareUpdateManifest",
+"readable": false
+},
+"0x20c5": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "cancelSoftwareUpdateDownloads",
+"readable": false
+},
+"0x20c6": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "softwareUpdateDownloadsFinished",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_DownloadStatusEnum"
+},
+"0x20c7": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "currentManifest",
+"readable": true
+},
+"0x20c8": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "downloadConfigurationContainerV2",
+"readable": false,
+"struct": "ConfigurationContainerDownloadParameters"
+},
+"0x20e1": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "installConfigurationContainers",
+"readable": false
+},
+"0x20e2": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "softwareUpdateAvailableForInstallation",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_SoftwareUpdateAvailableForInstallationEnum"
+},
+"0x20e3": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "installSoftwareUpdate",
+"readable": false,
+"struct": "InstallSoftwareUpdateParameters"
+},
+"0x20e4": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "softwareUpdateStatus",
+"readable": true,
+"struct": "SoftwareUpdateStatus"
+},
+"0x20e6": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "driveUnitUdsIdentificationData",
+"readable": true,
+"struct": "UdsIdentificationData"
+},
+"0x20e7": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "battery1UdsIdentificationData",
+"readable": true,
+"struct": "UdsIdentificationData"
+},
+"0x20e8": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "headUnitUdsIdentificationData",
+"readable": true,
+"struct": "UdsIdentificationData"
+},
+"0x20e9": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "connectModuleUdsIdentificationData",
+"readable": true,
+"struct": "UdsIdentificationData"
+},
+"0x20ea": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "antiLockBrakeSystemUdsIdentificationData",
+"readable": true,
+"struct": "UdsIdentificationData"
+},
+"0x20eb": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "softwareInstallationStateRequested",
+"readable": true
+},
+"0x20ec": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "softwareInstallationStatePreconditionsState",
+"readable": true
+},
+"0x20ed": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "updateProgressOfOtherComponents",
+"readable": true
+},
+"0x20ee": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "inSoftwareInstallationState",
+"readable": true
+},
+"0x20ef": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "battery2UdsIdentificationData",
+"readable": true,
+"struct": "UdsIdentificationData"
+},
+"0x20f0": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "overwriteSoftwareUpdateFinalizeBehaviour",
+"readable": false,
+"struct": "OverwriteSoftwareUpdateFinalizeBehaviourParameters"
+},
+"0x20f1": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bootloaderErrorStates",
+"readable": true,
+"struct": "BootloaderErrorStates"
+},
+"0x20f2": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "refreshSoftwareInstallationComponentInformation",
+"readable": false
+},
+"0x20f3": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "refreshSoftwareInstallationComponentInformationStatus",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_RefreshSoftwareInstallationComponentInformationStatusEnum"
+},
+"0x20f4": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "storedSoftwareUpdateStatus",
+"readable": true,
+"struct": "SoftwareUpdateStatus"
+},
+"0x20f5": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "storedBootloaderErrorStates",
+"readable": true,
+"struct": "BootloaderErrorStates"
+},
+"0x20f6": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "updatePlanInfo",
+"readable": true,
+"struct": "UpdatePlanInfoType"
+},
+"0x20f7": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "storedContainerErrorInfo",
+"readable": true,
+"struct": "ContainerErrorInfoType"
+},
+"0x20f8": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "componentIdentifierReadErrorInfo",
+"readable": true,
+"struct": "ComponentIdentifierReadErrorInfoType"
+},
+"0x20f9": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "storedComponentUnexpectedRestartErrorInfo",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_ComponentTypeEnum"
+},
+"0x20fa": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "storedUpdateStuckErrorInfo",
+"readable": true,
+"struct": "UpdateStuckErrorInfoType"
+},
+"0x20fb": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "initInstallationReportCreation",
+"readable": false,
+"struct": "InitInstallationReportCreationParameters"
+},
+"0x2101": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "remoteControlFeaturePropertiesRelease1",
+"readable": true,
+"struct": "RemoteControlFeaturePropertiesRelease1"
+},
+"0x2103": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "componentLocked",
+"readable": true
+},
+"0x2104": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "componentLockConfiguration",
+"readable": true,
+"struct": "ComponentLockConfiguration"
+},
+"0x2105": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "systemLocked",
+"readable": true
+},
+"0x2106": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "resetInactivityShutdownTimer",
+"readable": false
+},
+"0x2107": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "systemLockFeatureEnabled",
+"readable": true
+},
+"0x2108": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "remoteControlFeaturePropertiesRelease2",
+"readable": true,
+"struct": "RemoteControlFeaturePropertiesRelease2"
+},
+"0x2109": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "remoteControlFeaturePropertiesRelease3",
+"readable": true,
+"struct": "RemoteControlFeaturePropertiesRelease3"
+},
+"0x210a": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "remoteControlFeaturePropertiesRelease4",
+"readable": true,
+"struct": "RemoteControlFeaturePropertiesRelease4"
+},
+"0x210b": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "remoteControlStaticFeatureProperties",
+"readable": true,
+"struct": "RemoteControlStaticFeatureProperties"
+},
+"0x210c": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "snoozeState",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_SnoozeStateEnum"
+},
+"0x210d": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "leaveSnooze",
+"readable": false
+},
+"0x210e": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "heartRate",
+"readable": true
+},
+"0x210f": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "heartRateStatus",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_HeartRateStatusEnum"
+},
+"0x2111": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "setSystemWakeUpReason",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_SystemWakeUpReasonEnum"
+},
+"0x2112": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "rangeControlActive",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_RangeControlActiveEnum"
+},
+"0x2113": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "toggleBikeLight",
+"readable": false
+},
+"0x2115": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "unlockComponent",
+"readable": false,
+"struct": "UnlockTokenContainer"
+},
+"0x2116": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "requestMotorSupportProhibition",
+"readable": false,
+"struct": "MotorSupportProhibitionRequest"
+},
+"0x2117": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "batteryHotPlugout",
+"readable": true
+},
+"0x2121": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandRider",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x2122": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "reportIssue",
+"readable": false,
+"struct": "ReportIssueParameters"
+},
+"0x2123": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "issueEvent",
+"readable": true,
+"struct": "IssueEvent"
+},
+"0x2124": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "issueVisualizationEvent",
+"readable": true,
+"struct": "IssueVisualizationEvent"
+},
+"0x2125": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandIbd",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x2126": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandOem",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x2127": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandSp",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x2128": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "executeInformationManagerCommandBosch",
+"readable": false,
+"struct": "ExecuteInformationManagerCommandParameters"
+},
+"0x2129": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint[]",
+"name": "allIssueVisualizationEvents",
+"readable": true
+},
+"0x2141": {
+"component": "RemoteControl",
+"factor": 1000,
+"kind": "uint",
+"name": "ambientBrightness",
+"readable": true
+},
+"0x2151": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "activeIssueVisualizationEvent",
+"readable": true,
+"struct": "IssueVisualizationEvent"
+},
+"0x2152": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "reportIssueVisualizationEvent",
+"readable": false,
+"struct": "IssueVisualizationEvent"
+},
+"0x2153": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "acknowledgeIssueVisualizationEvent",
+"readable": false
+},
+"0x2161": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "gearProperties",
+"readable": true,
+"struct": "GearProperties"
+},
+"0x2162": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "gearCadenceLimits",
+"readable": true,
+"struct": "GearCadenceLimits"
+},
+"0x2163": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "currentGearOrRatio",
+"readable": true,
+"struct": "GearOrRatio"
+},
+"0x2164": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "shiftRequest",
+"readable": true,
+"struct": "ShiftRequest"
+},
+"0x2165": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "currentGearCadenceSetpoint",
+"readable": true
+},
+"0x2166": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "desiredGearCadenceSetpoint",
+"readable": true
+},
+"0x2168": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "autoDownShiftRecommendation",
+"readable": true
+},
+"0x2169": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "gearCanDeviceInformation",
+"readable": true,
+"struct": "DeviceInformation"
+},
+"0x216a": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "eShiftAvailable",
+"readable": true,
+"struct": "EShiftAvailable"
+},
+"0x216b": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "eShiftAvailableAtSomePoint",
+"readable": true,
+"struct": "EShiftAvailableAtSomePoint"
+},
+"0x216c": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "eShiftCanAvailable",
+"readable": true
+},
+"0x216d": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "eShiftBleAvailable",
+"readable": true,
+"struct": "EShiftBleAvailable"
+},
+"0x216e": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "motorInteractionRequest",
+"readable": true,
+"struct": "MotorInteraction"
+},
+"0x216f": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "eShiftOperationModeRequest",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_EShiftOperationModeEnum"
+},
+"0x2170": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "currentEShiftOperationMode",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_EShiftOperationModeEnum"
+},
+"0x2171": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "fineAdjustmentStepRequest",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_FineAdjustmentDirectionEnum"
+},
+"0x2172": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "currentFineAdjustmentStep",
+"readable": true
+},
+"0x2173": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "shiftMode",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_ShiftModeEnum"
+},
+"0x2174": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "automaticShiftFeedback",
+"readable": true,
+"struct": "AutomaticShiftFeedback"
+},
+"0x2176": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "eShiftCapabilitiesForRider",
+"readable": true,
+"struct": "EShiftCapabilitiesForRider"
+},
+"0x2177": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "shiftConfiguration",
+"readable": true,
+"struct": "ShiftConfiguration"
+},
+"0x2178": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "eShiftFeatureFlags",
+"readable": true,
+"struct": "EShiftFeatureFlags"
+},
+"0x2179": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "eBikeFeatureFlagsForEShift",
+"readable": true,
+"struct": "EBikeFeatureFlagsForEShift"
+},
+"0x217a": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "eShiftIsReadyToShutdown",
+"readable": true
+},
+"0x217b": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "handleShifterEvent",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_ShifterEventEnum"
+},
+"0x217c": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "shiftConfigurationLimits",
+"readable": true,
+"struct": "ShiftConfigurationLimits"
+},
+"0x217d": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "thirdPartyServiceModeActive",
+"readable": true
+},
+"0x217e": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "handleManualOverrideEvent",
+"readable": false,
+"struct": "GearOrRatio"
+},
+"0x217f": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "sint",
+"name": "currentFineAdjustmentStepV2",
+"readable": true
+},
+"0x2181": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "language",
+"readable": true
+},
+"0x2182": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "units",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_UnitEnum"
+},
+"0x2183": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "timeFormat",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_TimeFormatEnum"
+},
+"0x2184": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bikeId",
+"readable": true
+},
+"0x2185": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "serviceDue",
+"readable": true,
+"struct": "ServiceDue"
+},
+"0x2186": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "bikeName",
+"readable": true
+},
+"0x2197": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "headUnitAvailableAtSomePoint",
+"readable": true
+},
+"0x2198": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "maximumBatteriesAvailableAtSomePoint",
+"readable": true
+},
+"0x2199": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "connectModuleAvailableAtSomePoint",
+"readable": true
+},
+"0x219b": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "lockSoundEnabled",
+"readable": false
+},
+"0x219c": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "ledBrightnessConfiguration",
+"readable": true,
+"struct": "BrightnessConfiguration"
+},
+"0x219d": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "availableConfigurationBackupSlots",
+"readable": true
+},
+"0x219e": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "storeConfigurationBackupRecord",
+"readable": false,
+"struct": "StoreConfigurationBackupRecordParameters"
+},
+"0x219f": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "loadConfigurationBackupRecord",
+"readable": false
+},
+"0x21a0": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "debugFeatures",
+"readable": true
+},
+"0x21a2": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "autoBikeLightConfiguration",
+"readable": true,
+"struct": "AutomaticBikeLightConfiguration"
+},
+"0x21a7": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "loggerConfig",
+"readable": true,
+"struct": "LoggerConfig"
+},
+"0x21c1": {
+"component": "RemoteControl",
+"factor": 1000,
+"kind": "uint",
+"name": "internalBatteryVoltage",
+"readable": true
+},
+"0x21c4": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "usbPowerAvailable",
+"readable": true
+},
+"0x21c5": {
+"component": "RemoteControl",
+"factor": 100,
+"kind": "uint",
+"name": "internalBatteryTemperature",
+"readable": true
+},
+"0x21c6": {
+"component": "RemoteControl",
+"factor": 100,
+"kind": "uint",
+"name": "pcbTemperature",
+"readable": true
+},
+"0x21c8": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "usbChargingActive",
+"readable": true
+},
+"0x21c9": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "remainingBrcBatteryChargingTime",
+"readable": true,
+"struct": "RemainingBrcBatteryChargingTime"
+},
+"0x21ca": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "maximumAllowedUSBChargingPower",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_UsbPowerSpecificationEnum"
+},
+"0x21cb": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "powerManagementInformation",
+"readable": true,
+"struct": "PowerManagementInformation"
+},
+"0x21cc": {
+"component": "RemoteControl",
+"factor": 40,
+"kind": "uint",
+"name": "maximumAllowedBrcHmiPortCurrent",
+"readable": true
+},
+"0x21cd": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "internalBatteryDiagnostics",
+"readable": true,
+"struct": "InternalBatteryDiagnostics"
+},
+"0x2201": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "mobileApplicationAvailable",
+"readable": true
+},
+"0x2202": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "bleEnabled",
+"readable": true
+},
+"0x2203": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "bleCentralScanningEnabled",
+"readable": true
+},
+"0x2204": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bleCentralScanResults",
+"readable": true,
+"struct": "BleCentralScanResult"
+},
+"0x2205": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "blePeripheralPairingEnabled",
+"readable": true
+},
+"0x2206": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bleDeviceAddress",
+"readable": true
+},
+"0x2207": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "blePeripheralConnectionParameters",
+"readable": true,
+"struct": "BleConnectionParameters"
+},
+"0x2208": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralBookmark",
+"readable": false,
+"struct": "BleCentralBookmarkParameter"
+},
+"0x2209": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralUnbookmark",
+"readable": false
+},
+"0x220a": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralConnect",
+"readable": false
+},
+"0x220b": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralDisconnect",
+"readable": false
+},
+"0x220c": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "configuredSmartphones",
+"readable": true,
+"struct": "Smartphone"
+},
+"0x220d": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bleButtonEvent",
+"readable": true,
+"struct": "BleButtonEvent"
+},
+"0x220e": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bleAvailableButtons",
+"readable": true,
+"struct": "Button"
+},
+"0x220f": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "bleCentralGetAvailableDatabaseSlots",
+"readable": true
+},
+"0x2210": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint[]",
+"name": "bleCentralDatabase",
+"readable": true
+},
+"0x2211": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralClearDatabase",
+"readable": false
+},
+"0x2212": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "blePeripheralGetAvailableDatabaseSlots",
+"readable": true
+},
+"0x2213": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "blePeripheralGetDatabaseEntry",
+"readable": false
+},
+"0x2214": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "blePeripheralDatabaseEntryUpdated",
+"readable": true
+},
+"0x2215": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "blePeripheralRssiPollingEnabled",
+"readable": true
+},
+"0x2216": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bleCentralScanFilter",
+"readable": true,
+"struct": "BleCentralScanFilters"
+},
+"0x2217": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bleCentralRssiChanged",
+"readable": true,
+"struct": "BleCentralPeripheralRssiChanged"
+},
+"0x2218": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralEnableAutoReconnect",
+"readable": false
+},
+"0x2219": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralDisableAutoReconnect",
+"readable": false
+},
+"0x221a": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralGetConnectionData",
+"readable": false
+},
+"0x221b": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralGetConfigurationData",
+"readable": false
+},
+"0x221c": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bleCentralConnectionDataChanged",
+"readable": true,
+"struct": "BleCentralPeripheralConnectionDataChanged"
+},
+"0x221d": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bleCentralConfigurationDataChanged",
+"readable": true,
+"struct": "BleCentralPeripheralConfigurationDataChanged"
+},
+"0x221e": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralGetDeviceInformationService",
+"readable": false
+},
+"0x221f": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralGetBoschDeviceInformationService",
+"readable": false
+},
+"0x2220": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralGetBatteryService",
+"readable": false
+},
+"0x2221": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bleCentralBatteryServiceChanged",
+"readable": true,
+"struct": "BleCentralPeripheralBatteryServiceChanged"
+},
+"0x2222": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "bleCentralRssiPollingEnabled",
+"readable": true
+},
+"0x2223": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralGetPeripheralForButtonDevice",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_ButtonDeviceEnum"
+},
+"0x2224": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralGetInitializationState",
+"readable": false
+},
+"0x2225": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bleCentralInitializationStateChanged",
+"readable": true,
+"struct": "BleCentralPeripheralInitializationStateChanged"
+},
+"0x2226": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bleCentralVisualizableIssueTypes",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_IssueTypeEnum"
+},
+"0x2227": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "bleCentralUpdateIssueVisualization",
+"readable": false,
+"struct": "IssueVisualizationEvent"
+},
+"0x2228": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "bleHeartRate",
+"readable": true
+},
+"0x2229": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bleHeartRateStatus",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_HeartRateStatusEnum"
+},
+"0x222a": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "bleShifterReady",
+"readable": true
+},
+"0x2241": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "activityId",
+"readable": true
+},
+"0x2242": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "sint",
+"name": "startTimeOfActivity",
+"readable": true
+},
+"0x2243": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "durationWithoutStopsOfActivity",
+"readable": true
+},
+"0x2244": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string",
+"name": "timeZoneOfActivity",
+"readable": true
+},
+"0x2245": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "startOdometerOfActivity",
+"readable": true
+},
+"0x2246": {
+"component": "RemoteControl",
+"factor": 100,
+"kind": "uint",
+"name": "averageSpeed",
+"readable": true
+},
+"0x2247": {
+"component": "RemoteControl",
+"factor": 100,
+"kind": "uint",
+"name": "maximumSpeed",
+"readable": true
+},
+"0x2248": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "sint",
+"name": "averageCadence",
+"readable": true
+},
+"0x2249": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "sint",
+"name": "maximumCadence",
+"readable": true
+},
+"0x224a": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "averageRiderPower",
+"readable": true
+},
+"0x224b": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "maximumRiderPower",
+"readable": true
+},
+"0x224c": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "averageHeartRate",
+"readable": true
+},
+"0x224d": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "maximumHeartRate",
+"readable": true
+},
+"0x224e": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "energyConsumed",
+"readable": true
+},
+"0x224f": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "resetActivity",
+"readable": false
+},
+"0x2250": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "automaticActivityReset",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_AutomaticActivityResetEnum"
+},
+"0x2251": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "caloriesConsumed",
+"readable": true
+},
+"0x2252": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint[]",
+"name": "assistModeUsageTotal",
+"readable": true
+},
+"0x2253": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint[]",
+"name": "assistModeUsageWithMotorSupportActive",
+"readable": true
+},
+"0x2254": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "riderEnergyShare",
+"readable": true
+},
+"0x2255": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "brakeEvents",
+"readable": true,
+"struct": "BrakeEvents"
+},
+"0x2256": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "trickStats",
+"readable": true,
+"struct": "TrickStats"
+},
+"0x2280": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "debugTakeScreenshot",
+"readable": false,
+"struct": "ScreenshotConfig"
+},
+"0x2281": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "ledPatternHistory",
+"readable": true,
+"struct": "LedPatternStatusChange"
+},
+"0x2282": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "supportedTileIds",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_TileIdEnum"
+},
+"0x2283": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "featureStreamingOptionGroup",
+"readable": true,
+"struct": "FeatureStreamingOptionGroup"
+},
+"0x2284": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint[]",
+"name": "featureStreamingOptionStripe",
+"readable": true
+},
+"0x2285": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "testUiFeatureProperties",
+"readable": false,
+"struct": "TestUiFeatureProperties"
+},
+"0x2286": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "supportedTileSizes",
+"readable": true,
+"struct": "TileSize"
+},
+"0x2287": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "soundsVolumeLevel",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_SoundsVolumeLevelEnum"
+},
+"0x2288": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "buzzer",
+"readable": true,
+"struct": "BuzzerParams"
+},
+"0x2289": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "playSound",
+"readable": false,
+"struct": "PlaySound"
+},
+"0x228a": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "displayGenericText",
+"readable": true,
+"struct": "GenericText"
+},
+"0x228b": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "resetDisplayValues",
+"readable": false
+},
+"0x228c": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "touchEvent",
+"readable": true,
+"struct": "TouchEvent"
+},
+"0x22c1": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "uploadReadiness",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_UploadReadinessEnum"
+},
+"0x22c2": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "uploadResourceMetadata",
+"readable": false,
+"struct": "UploadResourceMetadataParameter"
+},
+"0x22c3": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "uploadResource",
+"readable": false,
+"struct": "UploadResourceParameter"
+},
+"0x22c4": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "requestTrustedDataPack",
+"readable": false,
+"struct": "TrustedDataPackRpcRequest"
+},
+"0x22c5": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "trustedDataPackAvailable",
+"readable": true,
+"struct": "TrustedDataPackAvailableEntry"
+},
+"0x22c6": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "securityLogFileAvailable",
+"readable": false,
+"struct": "SecurityLogFilePrepareResult"
+},
+"0x2305": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "thirdPartyDeviceInFullPowerMode",
+"readable": true
+},
+"0x2306": {
+"component": "RemoteControl",
+"factor": 10,
+"kind": "uint",
+"name": "additionalPowerConsumptionForEnergyReserve",
+"readable": true
+},
+"0x2313": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "xAbsBrakeEvent",
+"readable": true,
+"struct": "XAbsBrakeEvent"
+},
+"0x2314": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "xAbsBrakeDurationOfLastBrakeEvent",
+"readable": true
+},
+"0x2315": {
+"component": "RemoteControl",
+"factor": 10,
+"kind": "uint",
+"name": "xAbsBrakeDistanceOfLastBrakeEvent",
+"readable": true
+},
+"0x2316": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "xAbsDynamicFeatureProperties",
+"readable": true,
+"struct": "XAbsDynamicFeatureProperties"
+},
+"0x2317": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "xAbsAvailableAbsModeIcons",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_AbsModeIconEnum"
+},
+"0x2318": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "string[]",
+"name": "xAbsAvailableAbsModes",
+"readable": true
+},
+"0x2319": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "xAbsCurrentAbsMode",
+"readable": true,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_AbsModeEnum"
+},
+"0x2321": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "bool",
+"name": "signalLampRequired",
+"readable": true
+},
+"0x2322": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "signalLampControl",
+"readable": true,
+"struct": "SignalLampControl"
+},
+"0x2331": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "deviceAvailability",
+"readable": true,
+"struct": "DeviceAvailabilityEntry"
+},
+"0x2332": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "deviceDatabase",
+"readable": true,
+"struct": "DeviceDatabaseEntry"
+},
+"0x2333": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "removeDevice",
+"readable": false
+},
+"0x2334": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "getDeviceInformation",
+"readable": false
+},
+"0x2340": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "getELockProperties",
+"readable": false
+},
+"0x2341": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "eLockLockState",
+"readable": true,
+"struct": "ELockLockStateEntry"
+},
+"0x2343": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "eLockBondState",
+"readable": true,
+"struct": "ELockBondStateEntry"
+},
+"0x2344": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "eLockEstablishBond",
+"readable": false
+},
+"0x2345": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "eLockStartKeyRecovery",
+"readable": false
+},
+"0x2346": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "eLockEnterRecoveryKey",
+"readable": false,
+"struct": "ELockRecoveryKey"
+},
+"0x27c1": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "debugNfcTestResults",
+"readable": true,
+"struct": "DebugNfcTestResult"
+},
+"0x27c2": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "debugNfcReadTest",
+"readable": false
+},
+"0x27e1": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "readTestProxy",
+"readable": false,
+"struct": "ProxyPoint"
+},
+"0x27e2": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "writeTestProxy",
+"readable": false,
+"struct": "ProxyPointWithPayload"
+},
+"0x27e3": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "subscribeTestProxy",
+"readable": false,
+"struct": "ProxyPoint"
+},
+"0x27e4": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "unsubscribeTestProxy",
+"readable": false,
+"struct": "ProxyPoint"
+},
+"0x27e5": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "subscribableTestProxy",
+"readable": true,
+"struct": "ProxyPointWithPayload"
+},
+"0x27e6": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "rpc",
+"name": "rpcTestProxy",
+"readable": false,
+"struct": "ProxyPointWithPayload"
+},
+"0x27e7": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "unlockTokensWithNonce",
+"readable": false,
+"struct": "UnlockTokensWithNonce"
+},
+"0x27e8": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "struct",
+"name": "lockAccessCertificateChain",
+"readable": false,
+"struct": "ComponentLockCertificateChain"
+},
+"0x27e9": {
+"component": "RemoteControl",
+"factor": 1,
+"kind": "uint",
+"name": "unlockTokensNonce",
+"readable": false
+},
+"0x2810": {
+"component": "CanTestNode",
+"factor": 1,
+"kind": "void",
+"name": "canNetworkManagementGateway",
+"readable": false
+},
+"0x2811": {
+"component": "CanTestNode",
+"factor": 1,
+"kind": "bool",
+"name": "battery1Available",
+"readable": false
+},
+"0x2812": {
+"component": "CanTestNode",
+"factor": 1,
+"kind": "bool",
+"name": "driveUnitAvailable",
+"readable": false
+},
+"0x2813": {
+"component": "CanTestNode",
+"factor": 1,
+"kind": "bool",
+"name": "remoteControlAvailable",
+"readable": false
+},
+"0x2814": {
+"component": "CanTestNode",
+"factor": 1,
+"kind": "bool",
+"name": "battery2Available",
+"readable": false
+},
+"0x4080": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "void",
+"name": "app",
+"readable": false
+},
+"0x4081": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "uint",
+"name": "uiPriority",
+"readable": false
+},
+"0x4082": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "struct",
+"name": "featureStreamingAlert",
+"readable": false,
+"struct": "FeatureStreamingAlert"
+},
+"0x4083": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "struct",
+"name": "featureStreamingAlertResponse",
+"readable": false,
+"struct": "FeatureStreamingAlertResponse"
+},
+"0x4084": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "struct",
+"name": "featureStreamingOptionResponse",
+"readable": false,
+"struct": "OptionResponse"
+},
+"0x4085": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "sint",
+"name": "altitude",
+"readable": false
+},
+"0x4086": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "sint",
+"name": "maximumAltitude",
+"readable": false
+},
+"0x4087": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "uint",
+"name": "ascent",
+"readable": false
+},
+"0x4088": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "uint",
+"name": "descent",
+"readable": false
+},
+"0x4089": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "uint",
+"name": "stateOfCharge",
+"readable": false
+},
+"0x408a": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "sint",
+"name": "roadSlope",
+"readable": false
+},
+"0x408b": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "string",
+"name": "currentCountry",
+"readable": false
+},
+"0x4091": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "string",
+"name": "softwareVersion",
+"readable": false
+},
+"0x4092": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "string",
+"name": "dataModelVersion",
+"readable": false
+},
+"0x4093": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "string",
+"name": "messageBusBusinessLogicVersion",
+"readable": false
+},
+"0x4094": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "uint",
+"name": "heartRate",
+"readable": false
+},
+"0x4095": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "struct",
+"name": "heartRateStatus",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_HeartRateStatusEnum"
+},
+"0x4096": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "struct",
+"name": "navigationCurrentStatus",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_MobileAppNavigationStatusEnum"
+},
+"0x4097": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "uint",
+"name": "navigationDistanceToDestination",
+"readable": false
+},
+"0x4098": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "sint",
+"name": "navigationEta",
+"readable": false
+},
+"0x4099": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "uint",
+"name": "navigationTimeToDestination",
+"readable": false
+},
+"0x409a": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "uint",
+"name": "altitudeGraphAvailableSamples",
+"readable": false
+},
+"0x409b": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "rpc",
+"name": "getAltitudeGraph",
+"readable": false,
+"struct": "AltitudeGraphRequest"
+},
+"0x409c": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "rpc",
+"name": "updateIssueVisualization",
+"readable": false,
+"struct": "IssueVisualizationEvent"
+},
+"0x409d": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "struct",
+"name": "visualizableIssueTypes",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_IssueTypeEnum"
+},
+"0x409f": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "struct",
+"name": "mobileAppFeaturePropertiesRelease4",
+"readable": false,
+"struct": "MobileAppFeaturePropertiesRelease4"
+},
+"0x40a0": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "struct",
+"name": "location",
+"readable": false,
+"struct": "Location"
+},
+"0x40a1": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "struct",
+"name": "navigationAdvice",
+"readable": false,
+"struct": "NavigationAdvice"
+},
+"0x40a2": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "uint",
+"name": "systemStateOfChargeForRiderAtDestination",
+"readable": false
+},
+"0x40a3": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "bool",
+"name": "phoneCharging",
+"readable": false
+},
+"0x40a4": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "struct",
+"name": "userInfo",
+"readable": false,
+"struct": "UserInfo"
+},
+"0x40a8": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "struct",
+"name": "speed",
+"readable": false,
+"struct": "GnssSpeed"
+},
+"0x40a9": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "struct",
+"name": "startupStage",
+"readable": false,
+"struct": "Com_Bosch_Ebike_Bes3_Messagebus_StartupStageEnum"
+},
+"0x40aa": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "struct",
+"name": "mobileAppStaticFeatureProperties",
+"readable": false,
+"struct": "MobileAppStaticFeatureProperties"
+},
+"0x40ab": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "rpc",
+"name": "ccfRebootRequired",
+"readable": false,
+"struct": "CcfRebootRequested"
+},
+"0x4100": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "void",
+"name": "webSdk",
+"readable": false
+},
+"0x4180": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "void",
+"name": "eBike",
+"readable": false
+},
+"0x4200": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "void",
+"name": "lbtp",
+"readable": false
+},
+"0x4201": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "void",
+"name": "softwareUpdateManifests",
+"readable": false
+},
+"0x4202": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "void",
+"name": "softwareUpdates",
+"readable": false
+},
+"0x4203": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "void",
+"name": "configurationContainers",
+"readable": false
+},
+"0x4204": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "void",
+"name": "resourceMetadata",
+"readable": false
+},
+"0x4205": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "void",
+"name": "collectedDataSetResource",
+"readable": false
+},
+"0x4206": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "void",
+"name": "devLogResource",
+"readable": false
+},
+"0x4207": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "void",
+"name": "statisticResource",
+"readable": false
+},
+"0x4208": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "void",
+"name": "userDataResource",
+"readable": false
+},
+"0x4209": {
+"component": "MobileApp",
+"factor": 1,
+"kind": "void",
+"name": "trustedDataPackResource",
+"readable": false
+}
+}

@@ -1,0 +1,6 @@
+# Unit tests on a developer machine (the add-on itself uses Alpine packages).
+# paho-mqtt is pinned to the 1.6 API that Alpine's py3-paho-mqtt provides.
+paho-mqtt==1.6.1
+pytest==9.0.3
+# Renders the Home Assistant value templates in tests (HA uses Jinja2).
+jinja2==3.1.6

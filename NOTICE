@@ -1,0 +1,61 @@
+Bosch eBike Live Data – Home Assistant add-on
+
+The files bosch_ebike_ldi/app/bridge.py, livedata.py and ha_mqtt.py are
+derived from possm/ha-bosch-ebike-pibridge
+(https://github.com/possm/ha-bosch-ebike-pibridge, commit 82aa562, 2026-07-28),
+licensed under the Apache License 2.0 (see LICENSE). Its LDI decoder was
+itself ported from Xunil99/ha-bosch-ebike (MIT).
+
+Changes made in this repository (marked "ADD-ON:" in bridge.py):
+
+bridge.py
+- Configuration read from Home Assistant add-on options instead of YAML.
+- Adapter chosen by name (option "adapter") instead of first found.
+- Shared-adapter safety: only devices exposing the Bosch LDI service are
+  handled; other devices' disconnects are ignored and their bonds are never
+  removed; bonded bikes are recognised at start-up from cached UUIDs.
+- Pairing agent only accepts requests during the pairing window or from a
+  known bike (upstream accepted every request), independent of the
+  private_advertising setting.
+- Adapter Discoverable is no longer set (it exposed classic Bluetooth; the LE
+  advertisement has its own Discoverable flag). Adapter Pairable is only on
+  during the pairing window and restored afterwards (upstream: on for good).
+- A suspected stale bond is only logged; bonds are never removed
+  automatically (upstream removed them after 3 failed connects). The pairing
+  window no longer opens on every start (option open_pairing_on_start).
+- Failure to become the default pairing agent is logged as an error.
+- Device signals filtered by property name before any D-Bus call; the
+  device address is read from BlueZ (not the object path), so bikes using
+  random addresses keep one identity.
+- Notification signal handlers are removed on disconnect (upstream added one
+  per connection, so notifications were handled once per past connection).
+- Signal subscriptions limited to BlueZ (bus_name).
+- Re-advertising on adapter power-up, after a bluetoothd restart, and every
+  5 minutes while a bike is missing (idea from Xunil99's ESP32 bridge).
+  Bikes are marked offline when bluetoothd restarts or removes the device.
+- Undocumented LDI fields are logged once each.
+- Clear error messages when D-Bus or MQTT is unavailable.
+- Pairing window length overridable via LDI_PAIRING_WINDOW_SEC (tests).
+
+- "Forget paired bikes" handler, estimated remaining energy, last-seen time.
+
+livedata.py
+- ChargeEstimator takes an injectable clock (for tests).
+- decode_live_data optionally reports undocumented fields.
+- Light value 0 (invalid) decodes to None instead of False.
+- New estimated_energy_wh().
+
+ha_mqtt.py
+- Bridge device labelled "Home Assistant add-on" (was "Raspberry Pi"), with
+  the add-on version.
+- Entity definitions as named tuples. Live-only entities use the bike's
+  availability topic.
+- Corrected labels and device classes: System Locked inverted for HA's lock
+  class; Charger Connected (plug); Diagnostic Tool Connected; Light without
+  the ambient-light class.
+- Binary sensors render unknown for missing values.
+- New entities: Estimated Remaining Energy, Last Seen, Forget paired bikes.
+
+New files (our own): ble_policy.py, options.py, mcsp.py, protowire.py,
+datapoints.py, datapoints.json, explorer.py, capture.py, add-on packaging,
+scripts and tests.

@@ -1,0 +1,112 @@
+{
+  "notice": "Synthetic inner protobuf payloads, not observed bike traffic.",
+  "vectors": [
+    {
+      "label": "negative_temperature",
+      "message": "Int16NormFactor10Message",
+      "payload_hex": "0863",
+      "expected_raw": {
+        "value": -50
+      },
+      "expected_interpretation": {
+        "temperature_c": -5.0
+      },
+      "caution": "sint32 ZigZag; negative values are not uint16"
+    },
+    {
+      "label": "fractional_cycles",
+      "message": "Uint16NormFactor10Message",
+      "payload_hex": "087b",
+      "expected_raw": {
+        "value": 123
+      },
+      "expected_interpretation": {
+        "equivalent_full_cycles": 12.3
+      },
+      "caution": "Always divide by ten, including nonmultiples"
+    },
+    {
+      "label": "capacity",
+      "message": "Uint32NormFactor100Message",
+      "payload_hex": "08ac11",
+      "expected_raw": {
+        "value": 2220
+      },
+      "expected_interpretation": {
+        "capacity_ah": 22.2
+      },
+      "caution": "Capacity in Ah; do not label as Wh"
+    },
+    {
+      "label": "speed_unspecified_validity",
+      "message": "BikeSpeedWithValidity",
+      "payload_hex": "08c413",
+      "expected_raw": {
+        "value": 2500
+      },
+      "expected_interpretation": {
+        "speed_kmh": 25.0,
+        "has_validity": false
+      },
+      "caution": "Absent optional validity differs from explicit false"
+    },
+    {
+      "label": "speed_invalid",
+      "message": "BikeSpeedWithValidity",
+      "payload_hex": "08c4131000",
+      "expected_raw": {
+        "value": 2500,
+        "validity": false
+      },
+      "expected_interpretation": {
+        "speed_kmh": 25.0,
+        "has_validity": true,
+        "validity": false
+      },
+      "caution": "Do not publish explicitly invalid speed as measured"
+    },
+    {
+      "label": "speed_valid",
+      "message": "BikeSpeedWithValidity",
+      "payload_hex": "08c4131001",
+      "expected_raw": {
+        "value": 2500,
+        "validity": true
+      },
+      "expected_interpretation": {
+        "speed_kmh": 25.0,
+        "has_validity": true,
+        "validity": true
+      },
+      "caution": "Presence and value are separate"
+    },
+    {
+      "label": "mode_stats",
+      "message": "AssistModeStatistics",
+      "payload_hex": "088827107b",
+      "expected_raw": {
+        "distance": 5000,
+        "consumed_energy": 123
+      },
+      "expected_interpretation": {
+        "distance_km": 5.0,
+        "energy_wh": 123
+      },
+      "caution": "RPC result payload only; request needs mode identifier"
+    },
+    {
+      "label": "lifetime_stats",
+      "message": "DriveUnitLifeTimeStatistics",
+      "payload_hex": "08e80710a09c01",
+      "expected_raw": {
+        "consumed_energy_motor_support": 1000,
+        "start_odometer_consumed_energy_motor_support": 20000
+      },
+      "expected_interpretation": {
+        "motor_support_energy_wh": 1000,
+        "counter_start_odometer_km": 20.0
+      },
+      "caution": "Second field is counter baseline, not latest odometer"
+    }
+  ]
+}

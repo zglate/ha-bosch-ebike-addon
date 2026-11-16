@@ -1,0 +1,5 @@
+# Local working notes (personal paths), not published.
+HANDOFF.md
+.venv/
+__pycache__/
+.pytest_cache/

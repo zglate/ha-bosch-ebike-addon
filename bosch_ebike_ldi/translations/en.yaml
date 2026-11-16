@@ -1,0 +1,36 @@
+configuration:
+  bridge_name:
+    name: Bridge name
+    description: Name the bike and the Flow app show for this bridge.
+  adapter:
+    name: Bluetooth adapter
+    description: Adapter to use, e.g. hci0, or "auto" for the first one found.
+  private_advertising:
+    name: Private advertising
+    description: >-
+      Only show the bridge to Flow apps during the 5-minute pairing window
+      (after start-up or after pressing "Start pairing"). Bonded bikes still
+      reconnect at any time.
+  log_level:
+    name: Log level
+    description: Use debug to log every raw data packet from the bike.
+  battery_wh:
+    name: Battery size (Wh)
+    description: >-
+      Nominal energy of the bike's battery, used only for the "Estimated
+      Remaining Energy" sensor. PowerTube 800 = 800. A bike listed under
+      Bikes can set its own battery_wh.
+  bikes:
+    name: Bikes
+    description: >-
+      Optional. Give bikes a name by Bluetooth address. Unlisted bikes are
+      added automatically as "eBike XXXX".
+  mqtt_host:
+    name: MQTT host
+    description: Leave empty to use the Mosquitto broker add-on.
+  mqtt_port:
+    name: MQTT port
+  mqtt_username:
+    name: MQTT username
+  mqtt_password:
+    name: MQTT password

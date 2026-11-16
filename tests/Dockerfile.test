@@ -1,0 +1,12 @@
+# Test image: the real add-on image plus test tools (pytest, dbus-daemon,
+# mosquitto). Built and run by scripts/test.sh.
+ARG ADDON_IMAGE=bosch_ebike_ldi:dev
+FROM ${ADDON_IMAGE}
+
+RUN apk add --no-cache py3-pytest py3-jinja2 dbus mosquitto
+
+COPY bosch_ebike_ldi /src/bosch_ebike_ldi
+COPY tests /src/tests
+WORKDIR /src
+
+ENTRYPOINT ["python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests"]
