@@ -53,7 +53,8 @@ from explorer import BikeExplorer, Hooks, find_char, gatt_objects, inventory
 from explorer import plain as explorer_plain
 from livedata import decode_live_data, estimated_energy_wh, ChargeEstimator
 from ha_mqtt import HaMqttPublisher
-from options import ConfigError, battery_wh_for, build_config, load_options
+import supervisor
+from options import ConfigError, MqttMissing, battery_wh_for, build_config, load_options
 
 log = logging.getLogger(__name__)
 
@@ -851,6 +852,7 @@ class EbikeBridge:
                             opened_by="add-on" if self._bikes[bike_addr]["central"] else "bike")
 
         self._mqtt.publish_availability(bike_addr, True)
+        self._announce_new_bike(bike_addr)
         if char_path:
             self._subscribe(char_path, bike_addr)
         self._start_explorer(bike_addr, device_path)
@@ -896,15 +898,32 @@ class EbikeBridge:
         return done != (firmware or "unknown")
 
     def _sweep_done(self, addr: str, firmware: str | None) -> None:
-        self._explorer_state[addr] = {
-            "swept_firmware": firmware or "unknown",
-            "swept_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+        self._explorer_state.setdefault(addr, {}).update(
+            swept_firmware=firmware or "unknown",
+            swept_at=datetime.now(timezone.utc).isoformat(timespec="seconds"))
+        self._save_state()
+
+    def _save_state(self) -> None:
         try:
             STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
             STATE_FILE.write_text(json.dumps(self._explorer_state, indent=1),
                                   encoding="utf-8")
         except OSError as exc:
             log.warning("Could not save explorer state: %s", exc)
+
+    def _announce_new_bike(self, addr: str) -> None:
+        """First time a bike connects that isn't in the options: tell the user
+        its address, with a ready-to-paste 'bikes' entry."""
+        configured = {b["address"].upper() for b in self._cfg.get("bikes", [])}
+        state = self._explorer_state.setdefault(addr, {})
+        if addr in configured or state.get("announced"):
+            return
+        if supervisor.notify(f"bike_{addr.replace(':', '').lower()}",
+                             "Bosch eBike: bike connected",
+                             supervisor.BIKE_FOUND.format(
+                                 name=self._bikes[addr]["name"], address=addr)):
+            state["announced"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            self._save_state()
 
     def _is_moving(self, addr: str) -> bool:
         """From the LDI: is the bike being ridden right now?"""
@@ -1326,31 +1345,74 @@ class EbikeBridge:
 
 # ── CLI entry point ───────────────────────────────────────────────────────────
 
-def main() -> None:
-    # ADD-ON: configuration comes from the add-on options (/data/options.json)
-    # plus the MQTT service details run.sh exports, instead of a YAML file.
-    options_path = sys.argv[1] if len(sys.argv) > 1 else OPTIONS_PATH
-    try:
-        config = build_config(load_options(options_path), os.environ)
-    except ConfigError as exc:
-        logging.basicConfig()
-        log.error("%s", exc)
-        sys.exit(1)
+MQTT_RETRY_SEC = float(os.environ.get("BOSCH_MQTT_RETRY_SEC", 30))     # env: tests
 
+
+def wait_for_config(options_path: str) -> dict:
+    """Build the config, waiting (with a notification) for an MQTT broker.
+
+    The broker's details come from the add-on options if set, otherwise from
+    the Supervisor, where Mosquitto registers them. Mosquitto drops and
+    re-registers them on every restart, so "not registered" is often brief:
+    keep checking instead of exiting, and tell the user in Home Assistant.
+    """
+    notified, tries = False, 0
+    while True:
+        options = load_options(options_path)
+        env, reason = dict(os.environ), "set mqtt_host in the options"
+        if not options.get("mqtt_host"):
+            service, reason = supervisor.mqtt_service()
+            if service:
+                env.update(MQTT_HOST=str(service["host"]),
+                           MQTT_PORT=str(service.get("port") or 1883),
+                           MQTT_USERNAME=str(service.get("username") or ""),
+                           MQTT_PASSWORD=str(service.get("password") or ""))
+        try:
+            config = build_config(options, env)
+        except MqttMissing:
+            if tries % 10 == 0:
+                log.warning("No MQTT broker registered yet (%s). Waiting; see the "
+                            "notification in Home Assistant.", reason)
+            if not notified:
+                notified = supervisor.notify(
+                    "mqtt", "Bosch eBike: waiting for MQTT broker",
+                    supervisor.MQTT_MISSING.format(reason=reason))
+            tries += 1
+            time.sleep(MQTT_RETRY_SEC)
+            continue
+        if notified:
+            supervisor.dismiss("mqtt")
+        log.info("MQTT broker: %s:%s", config["mqtt"]["broker"], config["mqtt"]["port"])
+        return config
+
+
+def main() -> None:
+    # Configuration comes from the add-on options (/data/options.json) and the
+    # MQTT broker registered with the Supervisor.
+    options_path = sys.argv[1] if len(sys.argv) > 1 else OPTIONS_PATH
     logging.basicConfig(
-        level=getattr(logging, config["log_level"].upper(), logging.INFO),
+        level=logging.INFO,
         format="%(asctime)s %(levelname)-8s %(name)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    try:
+        config = wait_for_config(options_path)
+    except ConfigError as exc:
+        log.error("%s", exc)
+        supervisor.notify("config", "Bosch eBike: check the configuration", str(exc))
+        sys.exit(1)
+    logging.getLogger().setLevel(getattr(logging, config["log_level"].upper(), logging.INFO))
 
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     try:
         EbikeBridge(config).run()
-    except dbus.DBusException as exc:
+    except (dbus.DBusException, RuntimeError) as exc:
         log.error(
-            "Cannot talk to BlueZ over D-Bus: %s. The add-on needs host D-Bus "
-            "access (host_dbus) and a Bluetooth adapter on the host.", exc,
+            "Cannot talk to Bluetooth (BlueZ over D-Bus): %s. The add-on needs host "
+            "D-Bus access (host_dbus) and a Bluetooth adapter on the host.", exc,
         )
+        supervisor.notify("bluetooth", "Bosch eBike: Bluetooth not reachable",
+                          supervisor.BLUETOOTH_MISSING.format(reason=exc))
         sys.exit(1)
 
 

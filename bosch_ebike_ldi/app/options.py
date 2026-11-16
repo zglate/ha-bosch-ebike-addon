@@ -38,6 +38,10 @@ class ConfigError(ValueError):
     """Raised when the options cannot produce a working configuration."""
 
 
+class MqttMissing(ConfigError):
+    """No MQTT broker yet: neither in the options nor registered by Mosquitto."""
+
+
 def build_config(options: Mapping, env: Mapping) -> dict:
     """Merge add-on options and the discovered MQTT service into one config."""
     opts = {**DEFAULTS, **{k: v for k, v in options.items() if v is not None}}
@@ -58,7 +62,7 @@ def build_config(options: Mapping, env: Mapping) -> dict:
             "password": env.get("MQTT_PASSWORD") or None,
         }
     else:
-        raise ConfigError(
+        raise MqttMissing(
             "No MQTT broker found. Install and start the Mosquitto broker "
             "add-on, or set mqtt_host in this add-on's options."
         )

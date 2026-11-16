@@ -192,6 +192,15 @@ confirmed).
 
 ## Troubleshooting
 
+Setup problems (no MQTT broker, no Bluetooth, a new bike connected) appear as
+**notifications in Home Assistant** with what to do.
+
+**"Waiting for MQTT broker".** Mosquitto registers its connection details
+with the Supervisor each time it starts. If the app says it's waiting:
+restart the **Mosquitto broker** app and check its log for *"Successfully
+send service information to the Supervisor"*. This app picks it up within
+30 seconds by itself, no restart needed.
+
 **MCSP Status says "MCSP not exposed on this connection".** The link the
 bike opened for the LDI doesn't carry MCSP. With `mcsp_connect` on, the
 add-on connects to the bike's own advertisement instead, *if the bike's

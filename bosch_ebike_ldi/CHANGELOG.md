@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.1
+
+- **Setup problems now show up in Home Assistant** as notifications, with what
+  to do, instead of only in the log:
+  - no MQTT broker registered yet: the app keeps checking every 30 s and
+    carries on by itself once Mosquitto registers (Mosquitto drops and
+    re-registers its details on every restart), then clears the notice;
+  - Bluetooth not reachable;
+  - a new bike connected: its address with a ready-to-paste `bikes` entry.
+- The app now asks the Supervisor for the MQTT broker itself (no more
+  "Service not enabled" error line from the start script).
+- Fixed the `bashio::addon.version is deprecated` warning.
+
 ## 0.3.0 – exploration release
 
 - **New: MCSP exploration** (the Flow app's Bluetooth channel), read-only:

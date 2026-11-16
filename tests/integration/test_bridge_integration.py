@@ -136,11 +136,13 @@ class Harness:
         self.procs.append(proc)
         return proc
 
-    def start_bridge(self, pairing_window=60, release_ms=600_000, env=None, **options):
+    def start_bridge(self, pairing_window=60, release_ms=600_000, env=None, wait=True,
+                     **options):
         # Most tests exercise pairing, so open the window at start like the
         # add-on used to; the default (closed) has its own test.
         opts = {"mqtt_host": "127.0.0.1", "mqtt_port": MQTT_PORT,
                 "log_level": "debug", "open_pairing_on_start": True, **options}
+        opts = {k: v for k, v in opts.items() if v is not None}
         opts_path = self.tmp / "options.json"
         opts_path.write_text(json.dumps(opts))
         self.capture_dir = self.tmp / "capture"
@@ -152,6 +154,8 @@ class Harness:
         log = open(self.bridge_log, "w")
         self.bridge = self._spawn([sys.executable, "-u", str(BRIDGE), str(opts_path)],
                                   env=env, stdout=log, stderr=subprocess.STDOUT)
+        if not wait:
+            return
         wait_for(lambda: self.state()["advertisements"], "first advertisement")
         wait_for(lambda: self.mqtt.get("bosch_ebike/bridge/availability") == "online",
                  "bridge online on MQTT")
@@ -382,3 +386,52 @@ def test_stop_is_clean_and_marks_bridge_offline(harness):
     assert harness.bridge.wait(timeout=5) == 0
     wait_for(lambda: harness.mqtt.get("bosch_ebike/bridge/availability") == "offline",
              "bridge offline on MQTT")
+
+
+# ── Setup problems are shown in Home Assistant ────────────────────────────────
+
+from test_supervisor import FakeSupervisor  # noqa: E402
+
+
+@pytest.fixture
+def fake_supervisor():
+    sup = FakeSupervisor()
+    yield sup
+    sup.server.shutdown()
+
+
+def supervisor_env(sup):
+    return {"SUPERVISOR_URL": sup.url, "SUPERVISOR_TOKEN": "tok",
+            "BOSCH_MQTT_RETRY_SEC": "0.3"}
+
+
+def posted(sup, path_end):
+    return [body for method, path, _, body in sup.requests
+            if method == "POST" and path.endswith(path_end)]
+
+
+def test_waits_for_the_mqtt_broker_with_a_notification(harness, fake_supervisor):
+    # No broker in the options, and Mosquitto hasn't registered yet.
+    harness.start_bridge(mqtt_host=None, mqtt_port=None, wait=False,
+                         env=supervisor_env(fake_supervisor))
+    notes = wait_for(lambda: posted(fake_supervisor, "/create"), "notification")
+    assert notes[0]["notification_id"] == "bosch_ebike_mqtt"
+    assert "Service not enabled" in notes[0]["message"]
+    time.sleep(1)
+    assert harness.bridge.poll() is None                     # still running, waiting
+
+    # Mosquitto registers: the add-on carries on by itself and clears the note.
+    fake_supervisor.mqtt = {"result": "ok", "data": {
+        "host": "127.0.0.1", "port": MQTT_PORT, "username": "", "password": ""}}
+    wait_for(lambda: harness.mqtt.get("bosch_ebike/bridge/availability") == "online",
+             "bridge online after the broker appeared")
+    assert posted(fake_supervisor, "/dismiss") == [{"notification_id": "bosch_ebike_mqtt"}]
+
+
+def test_a_new_bike_is_announced_with_its_address(harness, fake_supervisor):
+    harness.start_bridge(env=supervisor_env(fake_supervisor))
+    harness.control.Connect(BIKE, True, True, dbus.ByteArray(SNAPSHOT))
+    note = wait_for(lambda: [n for n in posted(fake_supervisor, "/create")
+                             if n["notification_id"] == "bosch_ebike_bike_a40dbc012345"],
+                    "bike notification")[0]
+    assert f'- address: "{BIKE}"' in note["message"]

@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from options import ConfigError, battery_wh_for, build_config, load_options
+from options import ConfigError, MqttMissing, battery_wh_for, build_config, load_options
 
 MOSQUITTO = {"MQTT_HOST": "core-mosquitto", "MQTT_PORT": "1883",
              "MQTT_USERNAME": "addons", "MQTT_PASSWORD": "secret"}
@@ -64,7 +64,7 @@ def test_manual_broker_overrides_service():
 
 
 def test_no_broker_is_a_clear_error():
-    with pytest.raises(ConfigError, match="Mosquitto"):
+    with pytest.raises(MqttMissing, match="Mosquitto"):
         build_config({}, {})
 
 
