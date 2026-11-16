@@ -63,9 +63,13 @@ def connect_mcsp_bike(harness, **config):
 
 def test_mcsp_values_reach_home_assistant(harness):
     connect_mcsp_bike(harness)
+    expected = ("drive_unit_software", "motor_power", "charge_cycles", "battery_capacity",
+                "power_on_hours")
+    # Wait for every value checked below (they arrive one by one; slow under
+    # ARM emulation).
     state = wait_for(lambda: (s := harness.mqtt.json(MCSP_TOPIC))
-                     and s.get("battery_capacity") and s.get("assist_mode") == "TOUR+" and s,
-                     "curated MCSP values")
+                     and all(k in s for k in expected) and s.get("assist_mode") == "TOUR+"
+                     and s, "curated MCSP values", timeout=30)
     assert state["drive_unit_software"] == "21.12.0"
     assert state["motor_power"] == 250
     assert state["charge_cycles"] == 123.4
