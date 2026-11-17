@@ -112,6 +112,14 @@ def render_template(template: str) -> str | None:
     return None
 
 
+def addon_page() -> str | None:
+    """This add-on's own page in Home Assistant (its ingress panel)."""
+    reply = _request("GET", "/addons/self/info")
+    data = reply.get("data") if isinstance(reply, dict) else None
+    slug = data.get("slug") if isinstance(data, dict) else None
+    return f"/hassio/ingress/{slug}" if slug else None
+
+
 # The bridge device's page in Home Assistant, found from its dropdown entity.
 BRIDGE_DEVICE_TEMPLATE = (
     "{{ states.select | selectattr('attributes.friendly_name', 'search', "
@@ -148,16 +156,15 @@ Pairing with the Bosch eBike `{address}` didn't complete: *{reason}*
 
 Put the bike in pairing mode: switch it on (don't ride), press and hold the \
 System Controller's **on/off button for more than 3 seconds** and let go when \
-the **top bar of its charge indicator flashes blue**. Then pick it in \
-**Nearby Bosch eBikes** on {bridge} and press **Pair selected bike** again.
+the **top bar of its charge indicator flashes blue**. Then press **This is my \
+bike** again on {bridge}.
 """
 
 MCSP_CHECK = """\
 **Connect like the Flow app** finished for `{address}`: *{outcome}*.
 
-LDI (the live-data feed) reconnects by itself. Automatic reads happen when \
-the charger is plugged in and when the battery is full; this button reads \
-any time.
+LDI (the live-data feed) reconnects by itself. Automatic full readings happen \
+when the bike advertises while charging; **Read now** reads any time.
 
 - *replies*: the bike talks MCSP when the add-on connects the way the app \
 does; its extra data (motor power, battery health ...) appears on the bike's \

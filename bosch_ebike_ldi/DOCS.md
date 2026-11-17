@@ -39,91 +39,54 @@ press a button. Two ways it reads data:
    anything is missing (MQTT broker, Bluetooth), the notification says so
    and how to fix it; the app keeps checking and carries on by itself.
 
-## Add your bike
+## The Bosch eBike page
 
-Switch the bike on next to the Home Assistant host. The app scans for Bosch
-bikes by itself (15 s every minute while no bike is connected) and lists the
-ones it hears in the **Nearby Bosch eBikes** dropdown on the *Bosch eBike
-Bridge* device (Settings → Devices & services → Devices), with whether each
-is in pairing mode. The setup notification and *Setup Status* also show
-each one's signal strength.
+Everything happens on the app's own page: **Settings → Apps → Bosch eBike →
+Open web UI**. Switch on **Show in sidebar** on that same app page once, and
+it's one click from the Home Assistant sidebar. Notifications link straight
+to it.
 
-Then, either:
+- **No bike yet:** the page walks you through adding one. Plug the bike into
+  its charger (or switch it on) next to Home Assistant; it appears in the list
+  within a minute; press **This is my bike**. If that fails, put it in pairing
+  mode: switch it on, hold the System Controller's on/off button for more than
+  3 seconds until the top bar flashes blue, and press it again.
+- **Your bikes:** one card each with charge, health, cycles, distance and
+  when it was last read. Click a card for everything: battery, charging,
+  riding hours, temperatures, software versions (with *update available*),
+  **Read now**, **Remove**, and the bike's **name** and **battery size**.
+- **Add another bike:** the button under the cards.
+- **Debug captures:** at the bottom, collapsed: download a run to send along
+  with the app's log.
 
-- **Pick it:** choose your bike in **Nearby Bosch eBikes** and press **Pair
-  selected bike**. Your pick is the consent. Whether a bike accepts pairing
-  outside its pairing mode is **not tested on a real bike yet**; if pairing
-  fails, put the bike in pairing mode (below) and try again.
-  The strongest signal is usually the bike right next to the host.
-- **Pairing mode:** put the bike in pairing mode (below), then press **Start
-  pairing**. For 5 minutes the app pairs with a bike that says it's ready to
-  pair.
+### How it reads the bike
 
-**Pairing mode, System Controller** (from Bosch's manual): switch the bike
-on and don't ride; press and hold the **on/off button for more than 3
-seconds**; let go when the **top bar of the charge indicator flashes blue**.
-Bosch doesn't say how long it stays in pairing mode, so press **Pair
-selected bike** right away; if the bike has gone quiet, the app waits up to
-3 minutes for it and pairs the moment it's heard. With a Kiox or other
-display, see its manual for "pairing".
+Two ways, both read-only:
 
-Once paired, the setup notification goes away, the bike gets its own device
-(model, serial number and firmware version read from the bike), and the app
-remembers it and reconnects by itself. It explores it over MCSP, then lets
-go so the Flow app can connect (see *Your first test session*).
+- **Live data (LDI):** Bosch's official feed (charge, distance, speed,
+  cadence, your pedalling power, charger, lights). For it, also add the app as
+  an accessory in the Flow app: the page's *Live riding data* box has the
+  steps and a **Start pairing** button.
+- **Full readings (MCSP):** battery health, cycles, temperatures, motor hours,
+  software versions, charging mode. The bike only answers these on a
+  connection the app opens itself, the way the Flow app does, and it takes one
+  such connection at a time. So, when your bike **advertises** (at plug-in, or
+  when switched on), the app connects for a few seconds and asks whether the
+  charger is connected:
+  - **charging:** it reads everything (about a minute), then lets go;
+  - **not charging** (you're about to ride): it lets go at once, so the Flow
+    app gets the bike. If the Flow app connects in those few seconds, it may
+    need one retry.
 
-The app never pairs without one of those two steps, so it can't take a
-neighbour's bike. **Setup Status** on the bridge device always says where
-setup stands.
-
-### Also get the official live-data feed (LDI)
-
-Bosch only streams the LDI (live speed, cadence, rider power) to accessories
-added in the Flow app:
-
-1. Press **Start pairing** in Home Assistant (opens a 5-minute window).
-2. In the **Bosch eBike Flow** app: your bike → ⚙ → **Components** → **Add
-   new device**.
-3. Pick **HA eBike Bridge** (it may show as a bare address). It can take 3–4
-   tries.
-4. The log shows `eBike AA:BB:... connected – LDI yes, ...` and the LDI
-   sensors appear on the bike's device.
-
-Optional: list the bike under the `bikes` option to give it a name or its
-own `battery_wh`.
-
-### Connect like the Flow app (for the MCSP data)
-
-On the first real bike, MCSP (motor power, assist mode, battery health,
-cycles, temperature, motor hours, firmware versions) stayed silent on the link
-the bike opens for the LDI: the bike sent nothing at all. The Flow app
-connects the other way round: the phone connects *to* the bike. To try that:
-
-1. Bike switched on and standing still, LDI connected.
-2. Press **Connect like the Flow app** on the *Bosch eBike Bridge* device.
-3. The app pauses the LDI (stops advertising, drops the link), connects to the
-   bike on its next advertisement, and runs MCSP. The bike's **Status** shows
-   *Checking MCSP like the Flow app: …*.
-4. When done (at most 5 minutes) it disconnects and advertises again; the LDI
-   reconnects by itself. A notification shows the result.
-
-No pairing is accepted during the check.
-
-**Automatic reads** (option `mcsp_connect`, on by default), at moments you
-aren't riding with the Flow app: about 30 s after the **charger is plugged
-in**, and again when the **battery reaches 100 %**. Both are seen through the
-LDI, so for now the bike needs to be switched on when you plug it in (whether
-its Bluetooth stays up while charging switched off is untested). Otherwise
-the app **never connects to the bike by itself**, so the Flow app always gets
-it. In the one test so far, the Flow app couldn't connect while the add-on was
-connected the phone way (likely one such connection at a time; not yet
-confirmed).
+  At most one such peek every 10 minutes per bike. Turn it off with the
+  `mcsp_connect` option; **Read now** on the page works either way (bike on,
+  standing still, Flow app closed).
 
 ## Your first test session
 
 1. Start the add-on with default options and add the bike as above.
 2. Leave the bike **switched on and standing still** next to the host for
-   about **10 minutes**. The first time, the add-on reads the Flow app's
+   about **10 minutes** (or press **Read now** on the page). The first time, the add-on reads the Flow app's
    start-up set, then sweeps every readable datapoint (~700), gently paced.
    Watch the bike's **Status** entity, for example `Exploring (LDI + MCSP):
    sweeping datapoints, 40 %, 12 answered`. If it says *MCSP not answering on

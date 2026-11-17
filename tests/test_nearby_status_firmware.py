@@ -55,7 +55,7 @@ def test_setup_with_no_bike_explains_both_ways_and_lists_whats_heard():
     state, attrs, note = status.setup_status([], [], strangers, False, 1)
     assert state == "No bike added yet; 1 Bosch bike(s) nearby"
     assert attrs["nearby"] == [{"address": A, "signal_dbm": -55, "ready_to_pair": True}]
-    assert "Start pairing" in note and "Pair selected bike" in note
+    assert "Start pairing" in note and "This is my bike" in note
     assert f"`{A}`: signal -55 dBm, **ready to pair**" in note
 
 

@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.7.0 – the Bosch eBike page
+
+- **One page for everything** (Open web UI, or the sidebar with *Show in
+  sidebar* on): an overview card per bike (charge, health, cycles, distance,
+  last full reading), each bike's details (battery, charging, riding hours,
+  temperatures, software versions with *update available*), **Read now**,
+  **Remove**, and the bike's **name** and **battery size**, saved by the app
+  (no YAML). Adding a bike is a short guided list on the same page. Debug
+  captures moved to the bottom. Notifications link to the page.
+- **Full readings when the bike advertises ("peek").** A real plug-in this
+  morning showed: switched off, the bike wakes at plug-in, advertises once,
+  connects for live data, and goes back to sleep if that link is dropped, so
+  0.6's charger-triggered reads got nothing and cost the live data. Now, when
+  your bike advertises, the app connects for a few seconds and asks for the
+  charger state: charging, it reads everything; not charging, it lets go at
+  once for the Flow app. At most once per 10 minutes. The 0.6 charger and
+  full-battery triggers are gone.
+- Battery charge and odometer also come from the full reading (for bikes
+  without the live feed).
+- Quieter log: with a bike added, "nothing heard" scan lines are debug-level
+  and the device summary is hourly. While your bike isn't connected the app
+  listens almost continuously, since it only advertises briefly at plug-in.
+- The bridge's "Connect like the Flow app" button is now **Read bike now**.
+
 ## 0.6.0 – MCSP reads that leave the Flow app alone
 
 The first real MCSP session read 125 datapoints (battery health 96 %, 2.4

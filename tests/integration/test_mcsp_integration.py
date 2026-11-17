@@ -155,11 +155,11 @@ def test_reads_fall_back_to_the_other_source_address(harness):
              "fallback recorded in status")
 
 
-def test_never_connects_to_a_bike_by_itself(harness):
-    """The Flow app keeps the bike: the add-on only opens a link for the read
-    triggers (charger, full battery) and the button. Even a listed, bonded,
-    advertising bike is left alone."""
-    harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": SECOND_BIKE}])
+def test_with_automatic_reads_off_it_never_connects_by_itself(harness):
+    """mcsp_connect off: no peeks. Even a listed, bonded, advertising bike is
+    left alone (only the Read now button would connect)."""
+    harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": SECOND_BIKE}],
+                         mcsp_connect=False)
     enable_mcsp(harness, address=SECOND_BIKE)
     harness.control.Advertise(SECOND_BIKE, dbus.ByteArray(bytes([0, 0, 2, 0x21, 1, 1])), True)
     harness.control.Advertise(SECOND_BIKE, dbus.ByteArray(bytes([0, 0, 2, 0x21, 1, 1])), True)
@@ -234,31 +234,6 @@ def test_someone_elses_bike_is_never_touched_outside_the_pairing_window(harness)
     time.sleep(1)
     assert harness.state()["connect_calls"] == [] and harness.state()["pair_calls"] == []
 
-
-def test_reads_when_the_charger_is_plugged_in_and_when_the_battery_is_full(harness):
-    enable_mcsp(harness, answers_only_app_links=True)
-    harness.start_bridge(open_pairing_on_start=False, env={
-        "BOSCH_MCSP_TIMEOUT_MS": "200", "BOSCH_WINDOW_SEC": "2",
-        "BOSCH_AUTO_READ_DELAY_SEC": "1", "BOSCH_AUTO_READ_GAP_SEC": "0"})
-    unplugged = field(1, 0) + field(2, 0) + field(10, 80) + field(12, 1234567) + field(22, 0)
-    harness.control.Connect(BIKE, True, True, dbus.ByteArray(unplugged))
-    wait_for(lambda: [e for e in harness.capture_events() if e["kind"] == "bike_connected"],
-             "LDI link")
-    time.sleep(1)
-    starts = lambda: [e for e in harness.capture_events() if e["kind"] == "mcsp_window_start"]
-    assert starts() == []                                    # nothing at connect
-    harness.control.Notify(BIKE, dbus.ByteArray(field(22, 1)))          # plugged in
-    assert wait_for(starts, "read on plug-in")[0]["reason"] == "charger plugged in"
-    wait_for(lambda: [e for e in harness.capture_events() if e["kind"] == "mcsp_window_end"],
-             "first read done", timeout=10)
-    # LDI back (still charging), then the battery reaches 100 %.
-    charging = field(1, 0) + field(2, 0) + field(10, 95) + field(12, 1234567) + field(22, 1)
-    harness.control.Connect(BIKE, True, True, dbus.ByteArray(charging))
-    time.sleep(1)
-    assert len(starts()) == 1                                # still plugged in: no repeat
-    harness.control.Notify(BIKE, dbus.ByteArray(field(10, 100)))
-    wait_for(lambda: len(starts()) == 2, "read when full")
-    assert starts()[1]["reason"] == "battery full"
 
 def test_sweep_runs_once_per_firmware(harness):
     connect_mcsp_bike(harness)
@@ -399,7 +374,7 @@ def test_the_whole_journey_from_no_bike_to_firmware(harness):
         setup = wait_for(lambda: harness.mqtt.json("bosch_ebike/bridge/setup"), "setup status")
         assert setup["state"].startswith("No bike added yet")
         message = wait_for(lambda: notes(sup, "bosch_ebike_setup"), "setup notice")[-1]["message"]
-        assert "Pair selected bike" in message
+        assert "This is my bike" in message
         assert "(/config/devices/device/dev123)" in message      # straight to the bridge
 
         # 2. The bike is switched on: it appears in the Nearby dropdown.
@@ -700,7 +675,7 @@ def test_connect_like_the_flow_app_pauses_ldi_and_reaches_mcsp(harness):
 def test_connect_like_the_flow_app_gives_up_and_restores_advertising(harness):
     harness.control.EnableMcsp(BIKE, json.dumps({"values": VALUES,
                                                  "answers_only_app_links": True}))
-    harness.start_bridge(open_pairing_on_start=False,
+    harness.start_bridge(open_pairing_on_start=False, mcsp_connect=False,
                          env={**FAST, "BOSCH_WINDOW_SEC": "3"})
     harness.control.Connect(BIKE, True, True, dbus.ByteArray(SNAPSHOT))
     wait_for(lambda: events(harness, "bike_connected"), "LDI link")
@@ -709,48 +684,87 @@ def test_connect_like_the_flow_app_gives_up_and_restores_advertising(harness):
     end = wait_for(lambda: events(harness, "mcsp_window_end"), "window ends", timeout=15)[0]
     assert end["outcome"] == "no advertisement heard from the bike"
     wait_for(lambda: len(harness.state()["advertisements"]) > adverts, "advertising again")
-    # A bike that connects to us for LDI is never connected to automatically.
+    # With automatic reads off, the bike is never connected to by itself.
     harness.control.Advertise(BIKE, ADVERT, True)
     harness.control.Advertise(BIKE, ADVERT, True)
     time.sleep(2)
     assert harness.state()["connect_calls"] == []
 
 
-def test_a_plug_in_read_is_cancelled_if_the_charger_is_unplugged_meanwhile(harness):
-    """Plugged in, then unplugged within the delay: the rider is leaving, the
-    Flow app gets the bike."""
-    enable_mcsp(harness)
-    harness.start_bridge(open_pairing_on_start=False, env={
-        "BOSCH_AUTO_READ_DELAY_SEC": "2", "BOSCH_AUTO_READ_GAP_SEC": "0"})
-    unplugged = field(1, 0) + field(2, 0) + field(10, 80) + field(12, 1234567) + field(22, 0)
-    harness.control.Connect(BIKE, True, True, dbus.ByteArray(unplugged))
-    wait_for(lambda: [e for e in harness.capture_events() if e["kind"] == "bike_connected"],
-             "LDI link")
-    time.sleep(0.5)
-    harness.control.Notify(BIKE, dbus.ByteArray(field(22, 1)))          # plugged in
-    wait_for(lambda: [e for e in harness.capture_events()
-                      if e["kind"] == "auto_read_scheduled"], "read scheduled")
-    harness.control.Notify(BIKE, dbus.ByteArray(field(22, 0)))          # unplugged again
-    wait_for(lambda: [e for e in harness.capture_events()
-                      if e["kind"] == "auto_read_cancelled"], "read cancelled", timeout=6)
-    assert not [e for e in harness.capture_events() if e["kind"] == "mcsp_window_start"]
-    assert harness.state()["disconnect_calls"] == []
+# ── 0.7: peek on the bike's advertisement; the add-on's page ────────────────
+
+import urllib.request  # noqa: E402
+
+PEEK = {"BOSCH_MCSP_TIMEOUT_MS": "200", "BOSCH_PEEK_DECIDE_SEC": "8"}
 
 
+def bike_values(charging):
+    return json.dumps({"values": {**VALUES, "0x0089": "0801" if charging else "0800"},
+                       "answers_only_app_links": True})
 
-def test_an_update_without_the_charger_flag_keeps_the_plug_in_edge(harness):
-    """LDI updates carry only what changed: a packet without the charger flag
-    must not make the add-on forget it was unplugged."""
-    enable_mcsp(harness)
-    harness.start_bridge(open_pairing_on_start=False, env={
-        "BOSCH_AUTO_READ_DELAY_SEC": "30", "BOSCH_AUTO_READ_GAP_SEC": "0"})
-    unplugged = field(1, 0) + field(2, 0) + field(10, 80) + field(12, 1234567) + field(22, 0)
-    harness.control.Connect(BIKE, True, True, dbus.ByteArray(unplugged))
-    wait_for(lambda: [e for e in harness.capture_events() if e["kind"] == "bike_connected"],
-             "LDI link")
-    time.sleep(0.5)
-    harness.control.Notify(BIKE, dbus.ByteArray(field(10, 81)))         # SoC only
-    time.sleep(0.5)
-    harness.control.Notify(BIKE, dbus.ByteArray(field(22, 1)))          # plugged in
-    wait_for(lambda: [e for e in harness.capture_events()
-                      if e["kind"] == "auto_read_scheduled"], "plug-in read scheduled")
+
+def window_end(harness, timeout=30):
+    return wait_for(lambda: [e for e in harness.capture_events()
+                             if e["kind"] == "mcsp_window_end"], "read ended", timeout=timeout)[0]
+
+
+def test_a_peek_at_a_bike_that_is_not_charging_lets_go_at_once(harness):
+    """About to ride: connect, see 'no charger', leave the bike to the Flow app."""
+    harness.control.EnableMcsp(BIKE, bike_values(charging=False))
+    harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": BIKE}], env=PEEK)
+    harness.control.Advertise(BIKE, ADVERT, True)
+    wait_for(lambda: harness.state()["connect_calls"], "peek connects")
+    end = window_end(harness)
+    assert end["outcome"].startswith("not charging") and end["seconds"] < 10
+    assert "sweep_started" not in status(harness).get("milestones", {})
+    wait_for(lambda: harness.state()["disconnect_calls"], "let go")
+    harness.control.Advertise(BIKE, ADVERT, True)          # again, right away
+    time.sleep(2)
+    assert len(harness.state()["connect_calls"]) == 1       # one peek per gap
+
+
+def test_a_peek_at_a_charging_bike_reads_everything(harness):
+    harness.control.EnableMcsp(BIKE, bike_values(charging=True))
+    harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": BIKE}], env=PEEK)
+    harness.control.Advertise(BIKE, ADVERT, True)
+    end = window_end(harness, timeout=60)
+    assert end["outcome"] == "replies" and end["reason"] == "charging"
+    assert (harness.mqtt.json(MCSP_TOPIC) or {}).get("battery_health") is not None or \
+        status(harness)["values"] > 5
+
+
+def test_the_page_shows_the_bike_and_its_buttons_work(harness):
+    harness.control.EnableMcsp(BIKE, bike_values(charging=False))
+    harness.start_bridge(open_pairing_on_start=False, env=PEEK)
+    harness.control.Connect(BIKE, True, True, dbus.ByteArray(SNAPSHOT))   # LDI link
+
+    def page_state():
+        try:
+            return json.loads(urllib.request.urlopen("http://127.0.0.1:8099/api/state",
+                                                     timeout=2).read())
+        except OSError:
+            return {}
+    bike = wait_for(lambda: next(iter(page_state().get("bikes", [])), None), "bike on the page")
+    assert bike["address"] == BIKE and bike["live"] and bike["ldi"]["battery_soc"] == 87
+    req = urllib.request.Request("http://127.0.0.1:8099/api/action", method="POST",
+                                 data=json.dumps({"action": "settings", "address": BIKE,
+                                                  "name": "Range VLT", "battery_wh": 625}).encode())
+    urllib.request.urlopen(req, timeout=2)
+    renamed = wait_for(lambda: next((b for b in page_state().get("bikes", [])
+                                     if b["name"] == "Range VLT"), None), "renamed")
+    assert renamed["battery_wh"] == 625
+    req = urllib.request.Request("http://127.0.0.1:8099/api/action", method="POST",
+                                 data=json.dumps({"action": "read", "address": BIKE}).encode())
+    urllib.request.urlopen(req, timeout=2)
+    wait_for(lambda: [e for e in harness.capture_events() if e["kind"] == "mcsp_window_start"
+                      and e["reason"] == "button"], "Read now started a read")
+
+
+def test_a_peek_understands_not_charging_sent_as_an_empty_value(harness):
+    """Protobuf sends false as nothing: an empty successful answer is 'no charger'."""
+    harness.control.EnableMcsp(BIKE, json.dumps({"values": {**VALUES, "0x0089": ""},
+                                                 "answers_only_app_links": True}))
+    harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": BIKE}], env=PEEK)
+    harness.control.Advertise(BIKE, ADVERT, True)
+    end = window_end(harness)
+    assert end["outcome"].startswith("not charging") and end["seconds"] < 10

@@ -120,10 +120,14 @@ PAIR_WAIT_SEC = int(os.environ.get("BOSCH_PAIR_WAIT_SEC", 180))          # env: 
 # "Connect like the Flow app": the longest the add-on pauses LDI to try MCSP
 # over a connection it opens itself (the phone's role).
 WINDOW_SEC = int(os.environ.get("BOSCH_WINDOW_SEC", 300))                # env: tests
-# Automatic reads: when the charger is plugged in (after a ride) and when the
-# battery is full. A short delay lets a plug-in settle; one read per gap.
-AUTO_READ_DELAY_SEC = int(os.environ.get("BOSCH_AUTO_READ_DELAY_SEC", 30))   # env: tests
-AUTO_READ_GAP_SEC = int(os.environ.get("BOSCH_AUTO_READ_GAP_SEC", 600))      # env: tests
+# Automatic reads ("peek"): when your bike advertises and nothing is connected
+# to it, connect the app's way and ask whether the charger is connected.
+# Charging: read everything. Not charging (about to ride): let go at once.
+# Charging switched off, the bike only advertises briefly at plug-in and
+# sleeps again if its link drops, so this is the moment to read it.
+PEEK_GAP_SEC = int(os.environ.get("BOSCH_PEEK_GAP_SEC", 600))            # env: tests
+PEEK_DECIDE_SEC = int(os.environ.get("BOSCH_PEEK_DECIDE_SEC", 30))       # env: tests
+CHARGER_CONNECTED = 0x0089
 WAITING = "waiting for the bike to advertise"
 _UNSET = object()                    # "nothing shown yet" for the setup notice
 
@@ -322,7 +326,7 @@ class EbikeBridge:
         for bike in config.get("bikes", []):
             addr = bike["address"].upper()
             self._bikes[addr] = {
-                "name":      bike.get("name", f"eBike {addr[-5:].replace(':', '')}"),
+                "name":      bike.get("name") or None,
                 "state":     {},
                 "char_path": None,
             }
@@ -362,6 +366,8 @@ class EbikeBridge:
         except (OSError, ValueError):
             self._explorer_state = {}
         # Bikes paired through "Start pairing" stay known across restarts.
+        for addr, bike in self._bikes.items():      # names saved from the page win
+            bike["name"] = self._bike_name(addr)
         self._known_bikes |= {a for a, s in self._explorer_state.items()
                               if isinstance(s, dict) and s.get("adopted")}
         self._scanning = False
@@ -381,8 +387,10 @@ class EbikeBridge:
         self._setup_note = _UNSET                    # key of the setup notice shown
         self._fw_removed: set[str] = set()           # bikes whose update entities were removed
         self._armed: dict[str, float] = {}           # picked bike -> wait for it until
-        self._last_auto_read: dict[str, float] = {}  # bike -> monotonic of last auto read
-        self._auto_pending: set[tuple[str, str]] = set()  # (bike, reason) scheduled
+        self._last_peek: dict[str, float] = {}       # bike -> monotonic of last peek
+        self._ui_snapshot: dict = {}                 # what the add-on's page shows
+        self._addon_page: str | None = None          # /hassio/ingress/<slug>
+        self._last_scan_summary = -1e9               # INFO summary at most hourly
         self._window: dict | None = None             # "Connect like the Flow app" running
         # Who opened a link: we did only if our Connect/Pair call came before
         # BlueZ reported it connected (else the bike connected to us: LDI).
@@ -616,10 +624,13 @@ class EbikeBridge:
     def _scan_tick(self) -> bool:
         """Every SCAN_EVERY_SEC: a short scan while no bike is connected, plus
         housekeeping (forget bikes not heard lately, keep Status texts current)."""
-        connected = any(b.get("char_path") for b in self._bikes.values())
-        if not connected and not self._scanning and not self._adopting \
+        # With a bike added, listen almost continuously while it isn't
+        # connected: at plug-in it advertises only briefly.
+        missing = not self._known_bikes or any(
+            not self._bikes.get(a, {}).get("char_path") for a in self._known_bikes)
+        if missing and not self._scanning and not self._adopting \
                 and self._window is None:
-            self._start_scan(SCAN_FOR_SEC)
+            self._start_scan(SCAN_EVERY_SEC - 2 if self._known_bikes else SCAN_FOR_SEC)
         if self._nearby.prune():
             self._publish_nearby()
             self._refresh_setup()
@@ -672,10 +683,11 @@ class EbikeBridge:
                     f"{a} (signal {i.get('rssi')} dBm, {ble_policy.pairing_text(i.get('pairable'))}"
                     f"{', yours' if a in self._known_bikes else ''})" for a, i in heard.items()))
             else:
-                log.info("Scan done: no Bosch eBike heard (is it switched on and within "
-                         "range of the Home Assistant host?)")
+                (log.debug if self._known_bikes else log.info)(
+                    "Scan done: no Bosch eBike heard (is it switched on and within "
+                    "range of the Home Assistant host?)")
             self._capture.event("scan_result", heard=heard)
-            self._log_scan_devices()
+            self._log_scan_devices(loud=bool(heard) or not self._known_bikes)
             self._last_scan_heard = len(heard)
             if self._nearby.prune():
                 self._publish_nearby()
@@ -686,7 +698,7 @@ class EbikeBridge:
                 error_handler=lambda e: self._capture.event("scan_stop_error", error=str(e)))
         return False
 
-    def _log_scan_devices(self) -> None:
+    def _log_scan_devices(self, loud: bool = True) -> None:
         """Everything the scan heard, Bosch or not: tells "the Pi hears nothing"
         apart from "the bike doesn't advertise the way we expect"."""
         try:
@@ -714,7 +726,11 @@ class EbikeBridge:
                 ids[m] = ids.get(m, 0) + 1
         named = sorted((d for d in devices if d["name"]),
                        key=lambda d: -(d["rssi"] if d["rssi"] is not None else -999))[:8]
-        log.info("Scan heard %d Bluetooth devices in total; manufacturer IDs: %s; "
+        hourly = time.monotonic() - self._last_scan_summary >= 3600
+        if hourly:
+            self._last_scan_summary = time.monotonic()
+        (log.info if loud or hourly else log.debug)(
+                 "Scan heard %d Bluetooth devices in total; manufacturer IDs: %s; "
                  "strongest named: %s", len(devices),
                  ", ".join(f"{k}×{v}" for k, v in sorted(ids.items(), key=lambda kv: -kv[1]))
                  or "none",
@@ -998,8 +1014,6 @@ class EbikeBridge:
         if bike:
             bike["state"] = {}
             bike["char_path"] = None
-            if self._window is None or self._window["addr"] != bike_addr:
-                bike.pop("_charger_before", None)
             self._end_session(bike_addr, "disconnected")
         self._capture.event("bike_offline", bike=bike_addr)
         if bike:
@@ -1046,8 +1060,8 @@ class EbikeBridge:
 
         # Auto-register unknown bikes (addr not in config)
         if bike_addr not in self._bikes:
-            name = f"eBike {bike_addr[-5:].replace(':', '')}"
-            self._bikes[bike_addr] = {"name": name, "state": {}, "char_path": None}
+            self._bikes[bike_addr] = {"name": self._bike_name(bike_addr), "state": {},
+                                      "char_path": None}
 
         bike = self._bikes[bike_addr]
         bike["state"].update(data)   # merge sparse notification into running state
@@ -1072,7 +1086,7 @@ class EbikeBridge:
         # ADD-ON: derived values (marked as estimates in HA) and freshness.
         # Battery size: the bike's own setting, else the add-on's.
         bike["state"]["energy_remaining_wh"] = estimated_energy_wh(
-            soc, battery_wh_for(self._cfg, bike_addr))
+            soc, self._battery_wh(bike_addr))
         now_m = time.monotonic()
         if now_m - bike.get("_last_seen_mono", -1e9) >= 60:
             bike["_last_seen_mono"] = now_m
@@ -1081,7 +1095,6 @@ class EbikeBridge:
 
         self._mqtt.publish_discovery(bike_addr, bike["name"])
         self._mqtt.publish_state(bike_addr, bike["state"])
-        self._read_triggers(bike_addr, bike)
         log.debug("[%s] state update: %s", bike["name"], data)
 
     # ── Device lifecycle ──────────────────────────────────────────────────────
@@ -1120,8 +1133,8 @@ class EbikeBridge:
         self._connect_fails[bike_addr] = 0
 
         if bike_addr not in self._bikes:
-            name = f"eBike {bike_addr[-5:].replace(':', '')}"
-            self._bikes[bike_addr] = {"name": name, "state": {}, "char_path": char_path}
+            self._bikes[bike_addr] = {"name": self._bike_name(bike_addr), "state": {},
+                                      "char_path": char_path}
         else:
             self._bikes[bike_addr]["char_path"] = char_path
         self._bikes[bike_addr]["device_path"] = device_path
@@ -1138,6 +1151,7 @@ class EbikeBridge:
                 state["ldi_accessory"] = True
                 self._save_state()
         if self._window is not None and self._window["addr"] == bike_addr:
+            self._window.setdefault("connected_at", time.monotonic())
             self._window["phase"] = ("connected (opened by the add-on)"
                                      if self._bikes[bike_addr]["central"]
                                      else "the bike connected first (LDI)")
@@ -1259,6 +1273,15 @@ class EbikeBridge:
         """Publish an MCSP datapoint that has a Home Assistant entity."""
         bike = self._bikes[addr]
         bike["last_seen"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        w = self._window
+        if dp_id == CHARGER_CONNECTED and w is not None and w["addr"] == addr \
+                and w["reason"] == "peek" and w.get("charging") is None:
+            w["charging"] = bool(value)
+            if w["charging"]:
+                w["reason"] = "charging"
+                log.info("[%s] The bike is charging: reading everything", addr)
+            else:
+                self._end_window("not charging: left the bike to the Flow app")
         if dp_id in datapoints.IDENTITY:
             self._on_identity(addr, dp_id, value)
         if dp_id in (0x180D, 0x180C) and isinstance(value, list):
@@ -1332,6 +1355,8 @@ class EbikeBridge:
                 self._window_connect(device_path)
             return
         if addr in self._armed:
+            if self._window is not None:
+                self._end_window("stopped to add a bike")
             del self._armed[addr]
             log.info("Heard %s again: pairing now", addr)
             self._adopt(device_path, addr, info)
@@ -1339,6 +1364,8 @@ class EbikeBridge:
         if self._window_open() and info.get("pairable") is True \
                 and addr not in self._known_bikes:
             self._adopt(device_path, addr, info)
+        elif addr in self._known_bikes:
+            self._maybe_peek(device_path, addr)
 
     # ── Nearby dropdown, Setup Status, bike Status ───────────────────────────
 
@@ -1366,6 +1393,8 @@ class EbikeBridge:
         if addr in self._known_bikes:
             log.info("Pair selected bike: %s is already added", addr)
             return False
+        if self._window is not None:                 # adding a bike comes first
+            self._end_window("stopped to add a bike")
         self._consented.add(addr)
         quiet = time.time() - entry["seen"]
         if quiet <= PAIR_RECENT_SEC:
@@ -1400,7 +1429,11 @@ class EbikeBridge:
         return False
 
     def _bridge_ref(self) -> str:
-        """A link to the bridge device's page in Home Assistant, once found."""
+        """A link to the add-on's page (else the bridge device), once found."""
+        if not self._addon_page:
+            self._addon_page = supervisor.addon_page()
+        if self._addon_page:
+            return f"[the Bosch eBike page]({self._addon_page})"
         if self._bridge_link is None:
             device_id = supervisor.render_template(supervisor.BRIDGE_DEVICE_TEMPLATE)
             if device_id:
@@ -1541,6 +1574,171 @@ class EbikeBridge:
             return {}
         return cache.get("versions") or {}
 
+    # ── Bike settings (names, battery) and the add-on's page ─────────────────
+
+    def _bike_name(self, addr: str) -> str:
+        saved = self._explorer_state.get(addr, {}).get("name")
+        listed = next((b.get("name") for b in self._cfg.get("bikes", [])
+                       if b["address"] == addr and b.get("name")), None)
+        return saved or listed or f"eBike {addr[-5:].replace(':', '')}"
+
+    def _battery_wh(self, addr: str) -> int:
+        return self._explorer_state.get(addr, {}).get("battery_wh") \
+            or battery_wh_for(self._cfg, addr)
+
+    def _build_ui_state(self) -> bool:
+        """Every 2 s on the main loop: a plain snapshot for the page (the web
+        server thread only ever reads this dict, never live objects)."""
+        try:
+            versions = self._published_versions() if self._firmware_check else {}
+            bikes = []
+            for addr in sorted(self._known_bikes | set(self._bikes)):
+                bike = self._bikes.get(addr) or {}
+                memory = self._explorer_state.get(addr, {})
+                w = self._window if self._window and self._window["addr"] == addr else None
+                state, _ = status.bike_status(
+                    bool(bike.get("ldi") and bike.get("char_path")), bike.get("mcsp_status"),
+                    None, bike.get("last_seen"), time.time(), window_phase=w and w["phase"],
+                    last_check=memory.get("mcsp_window"))
+                fw = []
+                for key, title, component in firmware.COMPONENTS:
+                    ident = bike.get("identity", {}).get(component, {})
+                    installed = ident.get("softwareVersion")
+                    if not installed:
+                        continue
+                    published = firmware.match(ident.get("productName"), component, versions)
+                    fw.append({"title": title, "product": ident.get("productName"),
+                               "installed": installed,
+                               "latest": published[1] if published else None,
+                               "newer": bool(published and firmware.is_newer(
+                                   published[1], installed))})
+                bikes.append({
+                    "address": addr, "name": self._bike_name(addr),
+                    "battery_wh": self._battery_wh(addr),
+                    "configured": any(b["address"] == addr for b in self._cfg.get("bikes", [])),
+                    "status": state, "reading": bool(w), "live": bool(bike.get("char_path")),
+                    "ldi": {k: bike.get("state", {}).get(k) for k in (
+                        "battery_soc", "odometer_km", "charger_connected", "speed_kmh",
+                        "rider_power", "energy_remaining_wh")},
+                    "last_seen": bike.get("last_seen"),
+                    "mcsp": dict(bike.get("mcsp_state") or {}),
+                    "model": bike.get("identity", {}).get("DriveUnit", {}).get("productName"),
+                    "battery": bike.get("identity", {}).get("Battery", {}).get("productName"),
+                    "last_read": memory.get("mcsp_window"),
+                    "last_good": memory.get("mcsp_last_read"),
+                    "firmware": fw,
+                })
+            self._ui_snapshot = {
+                "version": self._cfg.get("version"),
+                "bikes": bikes,
+                "nearby": [{"address": a, "rssi": b["rssi"],
+                            "pairing": ble_policy.pairing_text(b["pairable"])}
+                           for a, b in self._nearby.strangers()],
+                "pairing_open": self._window_open(),
+                "waiting_for": next(iter(self._armed), None),
+                "adding": sorted(self._consented - self._known_bikes),
+                "reads": bool(self._mcsp_connect and self._use_mcsp),
+            }
+        except Exception as exc:                # the page must never break the bridge
+            log.debug("Page state: %s", exc)
+        return True
+
+    def ui_action(self, action: str, params: dict) -> None:
+        """A button on the add-on's page (called from the web server thread)."""
+        GLib.idle_add(lambda: self._ui_action(action, params) and False)
+
+    def _ui_action(self, action: str, params: dict) -> bool:
+        addr = str(params.get("address", "")).upper()
+        log.info("Page: %s %s", action, addr)
+        try:
+            if action == "read" and addr in self._known_bikes:
+                self.start_window(addr=addr, reason="button")
+            elif action == "stop" and self._window is not None:
+                self._end_window("stopped from the page")
+            elif action == "add" and self._nearby.get(addr):
+                self._selected = addr
+                self._pair_selected()
+            elif action == "start_pairing":
+                self.start_pairing()
+            elif action == "remove" and addr in self._known_bikes:
+                self.forget_bike(addr)
+            elif action == "settings" and addr in self._known_bikes:
+                memory = self._explorer_state.setdefault(addr, {})
+                wh = params.get("battery_wh")
+                try:
+                    wh = None if wh in (None, "") else int(round(float(wh)))
+                except (TypeError, ValueError):
+                    log.warning("Page: battery size %r isn't a number", wh)
+                    return False
+                if wh is not None and not 100 <= wh <= 5000:
+                    log.warning("Page: battery size %s Wh is out of range (100-5000)", wh)
+                    return False
+                name = str(params.get("name", "")).strip()[:40]
+                if name:
+                    memory["name"] = name
+                    if addr in self._bikes:
+                        self._bikes[addr]["name"] = name
+                        self._mqtt.forget_discovery(addr)   # re-announce under the new name
+                        if self._bikes[addr].get("state"):  # LDI entities only if it has LDI
+                            self._mqtt.publish_discovery(addr, name)
+                        if self._bikes[addr].get("mcsp_state"):
+                            self._mqtt.publish_mcsp_discovery(addr, name)
+                        self._refresh_bike(addr)
+                if wh is None:
+                    memory.pop("battery_wh", None)       # back to the option's size
+                else:
+                    memory["battery_wh"] = wh
+                self._save_state()
+            else:
+                log.warning("Page: %s %s not possible now", action, addr)
+        except Exception as exc:
+            log.error("Page action %s failed: %s", action, exc)
+        self._build_ui_state()
+        return False
+
+    def forget_bike(self, addr: str) -> None:
+        """Remove one bike: its bond, and the add-on's memory of it."""
+        if any(b["address"] == addr for b in self._cfg.get("bikes", [])):
+            log.warning("%s is listed under 'bikes' in the configuration; remove it there",
+                        addr)
+            return
+        path = self._bikes.get(addr, {}).get("device_path") or self._find_device(addr) \
+            or self._device_path(addr)
+        if self._window is not None and self._window["addr"] == addr:
+            self._end_window("bike removed")
+        self._mark_offline(addr)
+        try:
+            dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, self._adapter_path),
+                           ADAPTER_IFACE).RemoveDevice(path)
+        except dbus.DBusException as exc:
+            log.info("No bond to remove for %s: %s", addr, exc.get_dbus_name())
+        self._known_bikes.discard(addr)
+        self._consented.discard(addr)
+        self._bikes.pop(addr, None)
+        self._last_peek.pop(addr, None)
+        self._explorer_state.pop(addr, None)
+        self._save_state()
+        self._mqtt.remove_bike(addr, self._table)
+        log.warning("Removed bike %s", addr)
+        entry = self._nearby.get(addr)
+        if entry:
+            self._nearby.heard(addr, entry["path"], entry["rssi"], entry["pairable"], False)
+        self._publish_nearby()
+        self._refresh_setup()
+
+    def _find_device(self, addr: str) -> str | None:
+        """BlueZ's object for an address (its path may carry an older address)."""
+        try:
+            objects = dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, "/"),
+                                     OM_IFACE).GetManagedObjects()
+        except dbus.DBusException:
+            return None
+        for path, ifaces in objects.items():
+            props = ifaces.get(DEVICE_IFACE)
+            if props and str(props.get("Address", "")).upper() == addr:
+                return str(path)
+        return None
+
     def _opened_by_us(self, device_path: str) -> bool:
         called = self._connect_called.get(device_path)
         connected = self._connected_at.get(device_path)
@@ -1561,80 +1759,22 @@ class EbikeBridge:
         self._connected_at.pop(device_path, None)
         self._abandoned.discard(device_path)
 
-    def _read_triggers(self, addr: str, bike: dict) -> None:
-        """Automatic MCSP reads, at moments the Flow app isn't riding along:
-        the charger was plugged in (after a ride), and the battery is full.
-
-        Seen through the LDI: its snapshot carries the charger flag explicitly
-        (also when off, on the real bike); updates only what changed.
-        """
-        if not (self._mcsp_connect and self._use_mcsp):
+    def _maybe_peek(self, device_path: str, addr: str) -> None:
+        """Your bike advertises and nothing is connected to it: connect the
+        app's way and check the charger (see PEEK_* above)."""
+        if not (self._mcsp_connect and self._use_mcsp) or self._window is not None \
+                or self._adopting or self._armed or (self._consented - self._known_bikes) \
+                or self._window_open():
             return
-        state = bike["state"]
-        charger = state.get("charger_connected")
-        if charger is None:                 # not known yet: keep what we knew
+        if time.monotonic() - self._last_peek.get(addr, -1e9) < PEEK_GAP_SEC:
             return
-        soc = state.get("battery_soc")
-        before = bike.get("_charger_before")
-        bike["_charger_before"] = charger
-        memory = self._explorer_state.setdefault(addr, {})
-        # The full-battery read happens once per charge: forgotten when the
-        # charger is unplugged or the battery is clearly not full any more
-        # (also across restarts and dropped links).
-        if memory.get("full_read") and (not charger or (soc is not None and soc < 95)):
-            memory.pop("full_read")
-            self._save_state()
-        if not charger:
+        if self._bikes.get(addr, {}).get("char_path") or self._is_connected(device_path):
             return
-        if before is False:
-            self._schedule_auto_read(addr, "charger plugged in")
-        if soc is not None and soc >= 100 and not memory.get("full_read"):
-            self._schedule_auto_read(addr, "battery full")
-
-    def _schedule_auto_read(self, addr: str, reason: str) -> None:
-        if (addr, reason) in self._auto_pending:
-            return
-        last = self._last_auto_read.get(addr, -1e9)
-        if time.monotonic() - last < AUTO_READ_GAP_SEC:
-            log.debug("[%s] Automatic MCSP read (%s) deferred: one ran recently", addr, reason)
-            return
-        self._last_auto_read[addr] = time.monotonic()
-        self._auto_pending.add((addr, reason))
-        log.info("[%s] %s: reading MCSP in %d s", addr, reason.capitalize(),
-                 AUTO_READ_DELAY_SEC)
-        self._capture.event("auto_read_scheduled", bike=addr, reason=reason)
-        GLib.timeout_add_seconds(AUTO_READ_DELAY_SEC, self._auto_read_due, addr, reason)
-
-    def _auto_read_due(self, addr: str, reason: str) -> bool:
-        """The delay is over: read only if it still makes sense. Not started
-        means not done: the trigger fires again later (after the gap)."""
-        self._auto_pending.discard((addr, reason))
-        bike = self._bikes.get(addr) or {}
-        why_not = None
-        if addr not in self._known_bikes:
-            why_not = "bike no longer added"
-        elif not bike.get("state", {}).get("charger_connected"):
-            why_not = "charger no longer connected"
-        elif self._window_open():
-            why_not = "pairing window open"
-        elif self._window is not None:
-            why_not = "another read is running"
-        elif self._is_moving(addr):
-            why_not = "bike moving"
-        if why_not:
-            log.info("[%s] Automatic MCSP read (%s) not started: %s", addr, reason, why_not)
-            self._capture.event("auto_read_cancelled", bike=addr, reason=reason, why=why_not)
-            return False
-        self.start_window(addr=addr, auto=True, reason=reason)
-        if reason == "battery full" and self._window is not None \
-                and self._window["addr"] == addr:
-            self._explorer_state.setdefault(addr, {})["full_read"] = datetime.now(
-                timezone.utc).isoformat(timespec="seconds")
-            self._save_state()
-        return False
+        self._last_peek[addr] = time.monotonic()
+        self.start_window(addr=addr, auto=True, reason="peek", device_path=device_path)
 
     def start_window(self, addr: str | None = None, auto: bool = False,
-                     reason: str = "button") -> bool:
+                     reason: str = "button", device_path: str | None = None) -> bool:
         """Pause LDI and connect to the bike the way the Flow app does.
 
         On the first real bike MCSP was silent on the link the bike opened for
@@ -1660,7 +1800,8 @@ class EbikeBridge:
             log.warning("Connect like the Flow app: %s is moving; try when it stands still",
                         target)
             return False
-        path = self._bikes.get(target, {}).get("device_path") or self._device_path(target)
+        path = device_path or self._bikes.get(target, {}).get("device_path") \
+            or self._device_path(target)
         window = {"addr": target, "path": str(path), "phase": WAITING,
                   "started": time.monotonic(), "outcome": None, "auto": auto,
                   "connect_issued": False, "reason": reason}
@@ -1683,8 +1824,10 @@ class EbikeBridge:
                 dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, path),
                                DEVICE_IFACE).Disconnect(reply_handler=lambda: None,
                                                         error_handler=drop_failed)
-            if self._adapter_path and not self._adopting:
-                self._start_scan(WINDOW_SEC)
+            if device_path is not None and not self._is_connected(device_path):
+                self._window_connect(device_path)
+            elif self._adapter_path and not self._adopting:
+                self._start_scan(WINDOW_SEC)            # extends a running scan
             self._refresh_bike(target)
         except Exception as exc:                   # D-Bus gone, disk full ...
             log.error("[%s] Connect like the Flow app couldn't start: %s", target, exc)
@@ -1695,6 +1838,8 @@ class EbikeBridge:
         w = self._window
         w["phase"] = "connecting (as the Flow app does)"
         w["connect_issued"] = True
+        w["connect_at"] = time.monotonic()
+        w["path"] = str(device_path)            # disconnect what we actually connected
         if self._scanning:                      # one radio: let the connection have it
             if self._scan_stop_timer is not None:
                 GLib.source_remove(self._scan_stop_timer)
@@ -1716,6 +1861,11 @@ class EbikeBridge:
     def _window_watch(self, window: dict) -> bool:
         """Every 2 s: did the bike answer on *our* link? Done once it goes idle."""
         if self._window is not window:
+            return False
+        if window["reason"] == "peek" and window.get("charging") is None \
+                and window.get("connect_at") \
+                and time.monotonic() - window["connect_at"] > PEEK_DECIDE_SEC + 15:
+            self._end_window("no charger answer: left the bike to the Flow app")
             return False
         bike = self._bikes.get(window["addr"], {})
         st = bike.get("mcsp_status") or {}
@@ -1764,6 +1914,7 @@ class EbikeBridge:
             state["mcsp_window"] = {"outcome": outcome, "at": now, "reason": w["reason"]}
             if outcome == "replies":
                 state["mcsp_central_ok"] = now
+                state["mcsp_last_read"] = {"at": now, "reason": w["reason"]}
             self._save_state()
             bike = self._bikes.get(addr) or {}
             # Drop our link: connected, still connecting, or not resolved yet.
@@ -2086,10 +2237,12 @@ class EbikeBridge:
                               lambda option: GLib.idle_add(self._on_nearby_selected, option))
         self._mqtt.add_button("pair_selected", "Pair selected bike", "mdi:link-variant",
                               lambda: GLib.idle_add(self._pair_selected))
-        self._mqtt.add_button("mcsp_window", "Connect like the Flow app", "mdi:cellphone-link",
+        self._mqtt.add_button("mcsp_window", "Read bike now", "mdi:cellphone-link",
                               lambda: GLib.idle_add(self.start_window))
-        if self._capture.run_dir:
-            webui.start(str(Path(self._capture.run_dir).parent))
+        self._build_ui_state()
+        GLib.timeout_add_seconds(2, self._build_ui_state)
+        webui.start(str(Path(self._capture.run_dir).parent) if self._capture.run_dir
+                    else None, state=lambda: self._ui_snapshot, action=self.ui_action)
         # Firmware: first check a minute after start, then daily.
         GLib.timeout_add_seconds(FIRMWARE_FIRST_CHECK_SEC,
                                  lambda: self._firmware_tick() and False)

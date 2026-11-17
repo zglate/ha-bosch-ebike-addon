@@ -207,6 +207,8 @@ ENTITIES = [
            "temperature", "measurement"),
     Entity(0x1884, "drive_pcb_temperature", "Drive Unit Temperature", "°C",
            "temperature", "measurement"),
+    Entity(0x0088, "state_of_charge", "Battery Charge (MCSP)", "%", "battery", "measurement"),
+    Entity(0x1818, "odometer_m", "Odometer (MCSP)", "m", "distance", "total_increasing"),
     Entity(0x00D8, "battery_health", "Battery State of Health", "%", None, "measurement"),
     Entity(0x0096, "charge_cycles", "Charge Cycles", None, None, "total_increasing"),
     Entity(0x00B0, "charge_cycles_on_bike", "Charge Cycles on Bike", None, None,

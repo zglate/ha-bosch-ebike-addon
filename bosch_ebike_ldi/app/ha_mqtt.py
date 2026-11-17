@@ -293,6 +293,29 @@ class HaMqttPublisher:
         self._client.publish(topic, json.dumps({"state": state, "attributes": attributes},
                                                default=str), retain=True)
 
+    def remove_bike(self, bike_id: str, table: dict) -> None:
+        """Remove a bike's entities (and device) from Home Assistant."""
+        slug = _slug(bike_id)
+        topics = [f"homeassistant/sensor/bosch_ebike_{slug}_{s.key}/config" for s in SENSOR_DEFS]
+        topics += [f"homeassistant/binary_sensor/bosch_ebike_{slug}_{b.key}/config"
+                   for b in BINARY_SENSOR_DEFS]
+        topics += [f"homeassistant/sensor/bosch_ebike_{slug}_mcsp_{e.key}/config"
+                   for e in ENTITIES]
+        topics += [f"homeassistant/sensor/bosch_ebike_{slug}_{k}/config"
+                   for k in ("status", "mcsp_status", "mcsp_values")]
+        topics += [f"homeassistant/update/bosch_ebike_{slug}_firmware_{k}/config"
+                   for k in ("drive_unit", "battery", "controller", "head_unit")]
+        topics += [f"homeassistant/sensor/bosch_ebike_{slug}_dp_{dp_id:04x}/config"
+                   for dp_id in table]
+        for topic in topics:
+            self._client.publish(topic, "", retain=True)
+        self.forget_discovery(bike_id)
+        self._device_info.pop(bike_id, None)
+
+    def forget_discovery(self, bike_id: str) -> None:
+        """Publish a bike's discovery again next time (e.g. after a rename)."""
+        self._discovered = {k for k in self._discovered if bike_id not in k}
+
     def set_device_info(self, bike_id: str, bike_name: str, info: dict) -> None:
         """Model, serial number and firmware for a bike's HA device."""
         if self._device_info.get(bike_id) == info:

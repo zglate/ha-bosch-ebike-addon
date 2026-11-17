@@ -726,13 +726,15 @@ class McspSession:
                 value = decode_value(dp, body)
             except Exception as exc:          # keep raw bytes; never crash the session
                 error = str(exc)
+        elif status == 0 and dp is not None and dp.kind == "bool" and source.startswith("READ"):
+            value = False                     # protobuf's false is an empty message
         status_name = ("timeout" if status is None
                        else mcsp.STATUS_NAMES.get(status, f"status_{status}"))
         if status != 0:
             self.status["errors"][status_name] = self.status["errors"].get(status_name, 0) + 1
         result = {"status": status_name, "source": source, "raw": body.hex(),
                   "latency_ms": latency_ms}
-        if status == 0 and body:
+        if status == 0 and (body or value is not None):
             result.update(value=value, decode_error=error)
         self._capture.datapoint(self.address, dp_id, label, **result)
         self._capture.event("datapoint", bike=self.address, id=f"0x{dp_id:04X}",

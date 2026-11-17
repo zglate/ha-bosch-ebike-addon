@@ -30,11 +30,11 @@ configuration:
     name: MCSP exploration
     description: Read the Flow app's channel (read-only) when the bike exposes it.
   mcsp_connect:
-    name: Automatic MCSP reads
+    name: Automatic full readings
     description: >-
-      Read MCSP (battery health, cycles, motor hours ...) when the charger is
-      plugged in and when the battery is full. The app never connects to the
-      bike otherwise, so the Flow app keeps it.
+      When your bike advertises, connect for a few seconds: read everything
+      (battery health, cycles, motor hours ...) if it's charging, let go at
+      once otherwise so the Flow app gets it. At most once per 10 minutes.
   mcsp_sweep:
     name: Datapoint sweep
     description: Read every readable datapoint once per drive-unit firmware.

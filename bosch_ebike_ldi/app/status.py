@@ -15,7 +15,7 @@ from ble_policy import pairing_text
 PAIRING_MODE_STEPS = ("switch the bike on (don't ride), then press and hold the System Controller's **on/off button for more than 3 seconds** and let go when the **top bar of its charge indicator flashes blue**")
 
 
-BRIDGE = "the *Bosch eBike Bridge* device (Settings → Devices & services → Devices)"
+BRIDGE = "the Bosch eBike page (Settings → Apps → Bosch eBike → Open web UI)"
 
 
 def setup_status(known: list[str], connected: list[str], strangers: list[tuple[str, dict]],
@@ -55,8 +55,8 @@ def setup_notification(strangers: list[tuple[str, dict]], bridge: str = BRIDGE) 
         for a, b in strangers) or "- none yet. Switch the bike on next to the host."
     return f"""No bike has been added yet. To add yours, open {bridge}:
 
-1. Choose your bike under **Nearby Bosch eBikes** (the strongest signal is usually the one next to the host).
-2. Press **Pair selected bike**. The bike may only advertise for a short while, so if it has gone quiet the app waits up to 3 minutes and pairs the moment it hears it. To make it advertise, put it in pairing mode: {PAIRING_MODE_STEPS}. (Other controls or displays: see their manual for "pairing".)
+1. Plug your bike into its charger (or switch it on) next to Home Assistant.
+2. On the page, press **This is my bike** next to it (the strongest signal is usually the one next to the host). The bike may only advertise for a short while, so if it has gone quiet the app waits up to 3 minutes and pairs the moment it hears it. To make it advertise, put it in pairing mode: {PAIRING_MODE_STEPS}. (Other controls or displays: see their manual for "pairing".)
 
 Bosch bikes heard nearby:
 {heard}
