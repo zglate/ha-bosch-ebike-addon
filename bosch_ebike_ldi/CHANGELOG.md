@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.2
+
+- **Redesigned page.** One bike opens straight onto it:
+  - a charge ring, status and freshness ("Full details from 2 h ago, when plugged in");
+  - four tiles (battery health, charge cycles, distance, motor hours);
+  - Battery / Charging / Motor / Software cards, with updates flagged and where to install them.
+
+  Live riding data setup, bike settings and debug captures are tucked away below. Several bikes show as cards.
+- **Clearer words.** "Read full details" says what it gets (health, cycles, motor hours, temperatures,
+  software) and its one cost (the Flow app can't connect for about a minute). A read that didn't work is
+  explained in plain words, e.g. "the bike was asleep. Switch it on and try again".
+
 ## 0.7.1
 
 - The page keeps showing the last full reading (health, cycles, temperatures,

@@ -595,7 +595,8 @@ def test_waiting_for_a_quiet_bike_gives_up_and_says_so(harness):
         _pick(harness, NEW_BIKE)
         wait_for(lambda: any(e["kind"] == "pair_wait_expired"
                              for e in harness.capture_events()), "gave up", timeout=10)
-        note = notes(sup, f"bosch_ebike_pair_{NEW_SLUG.replace('_', '')}")[-1]
+        note = wait_for(lambda: notes(sup, f"bosch_ebike_pair_{NEW_SLUG.replace('_', '')}"),
+                        "notification")[-1]
         assert "wasn't heard" in note["message"]
         assert harness.state()["pair_calls"] == []
     finally:

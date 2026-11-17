@@ -1633,6 +1633,7 @@ class EbikeBridge:
                     "battery": identity.get("Battery", {}).get("productName"),
                     "last_read": memory.get("mcsp_window"),
                     "last_good": last_good,
+                    "live_setup": bool(memory.get("ldi_accessory") or bike.get("ldi")),
                     "firmware": fw,
                 })
             self._ui_snapshot = {
