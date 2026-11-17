@@ -1602,7 +1602,8 @@ class EbikeBridge:
                     last_check=memory.get("mcsp_window"))
                 fw = []
                 for key, title, component in firmware.COMPONENTS:
-                    ident = bike.get("identity", {}).get(component, {})
+                    ident = (bike.get("identity") or (memory.get("last_values") or {}).get(
+                        "identity") or {}).get(component, {})
                     installed = ident.get("softwareVersion")
                     if not installed:
                         continue
@@ -1612,6 +1613,12 @@ class EbikeBridge:
                                "latest": published[1] if published else None,
                                "newer": bool(published and firmware.is_newer(
                                    published[1], installed))})
+                saved = memory.get("last_values") or {}
+                identity = bike.get("identity") or saved.get("identity") or {}
+                old = memory.get("mcsp_window") or {}
+                last_good = memory.get("mcsp_last_read") or (
+                    {"at": old["at"], "reason": old.get("reason", "button")}
+                    if old.get("outcome") == "replies" else None)
                 bikes.append({
                     "address": addr, "name": self._bike_name(addr),
                     "battery_wh": self._battery_wh(addr),
@@ -1621,11 +1628,11 @@ class EbikeBridge:
                         "battery_soc", "odometer_km", "charger_connected", "speed_kmh",
                         "rider_power", "energy_remaining_wh")},
                     "last_seen": bike.get("last_seen"),
-                    "mcsp": dict(bike.get("mcsp_state") or {}),
-                    "model": bike.get("identity", {}).get("DriveUnit", {}).get("productName"),
-                    "battery": bike.get("identity", {}).get("Battery", {}).get("productName"),
+                    "mcsp": {**saved.get("mcsp", {}), **(bike.get("mcsp_state") or {})},
+                    "model": identity.get("DriveUnit", {}).get("productName"),
+                    "battery": identity.get("Battery", {}).get("productName"),
                     "last_read": memory.get("mcsp_window"),
-                    "last_good": memory.get("mcsp_last_read"),
+                    "last_good": last_good,
                     "firmware": fw,
                 })
             self._ui_snapshot = {
@@ -1915,6 +1922,9 @@ class EbikeBridge:
             if outcome == "replies":
                 state["mcsp_central_ok"] = now
                 state["mcsp_last_read"] = {"at": now, "reason": w["reason"]}
+                bike_now = self._bikes.get(addr) or {}
+                state["last_values"] = {"mcsp": dict(bike_now.get("mcsp_state") or {}),
+                                        "identity": bike_now.get("identity", {})}
             self._save_state()
             bike = self._bikes.get(addr) or {}
             # Drop our link: connected, still connecting, or not resolved yet.
@@ -2264,6 +2274,9 @@ class EbikeBridge:
 
         def _shutdown(signum, frame) -> None:
             log.info("Caught signal %d – shutting down", signum)
+            if self._window is not None:          # let go of the bike, advertise again
+                self._window["auto"] = True       # (no notification on the way out)
+                self._end_window("app stopped")
             self._set_pairable(self._pairable_initial)  # ADD-ON
             for addr in self._bikes:
                 self._mqtt.publish_availability(addr, False)

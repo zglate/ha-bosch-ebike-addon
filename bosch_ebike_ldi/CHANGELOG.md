@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1
+
+- The page keeps showing the last full reading (health, cycles, temperatures,
+  software versions ...) after the app restarts, instead of blank values
+  until the next one. Readings from before 0.7 count as the last good one.
+
 ## 0.7.0 – the Bosch eBike page
 
 - **One page for everything** (Open web UI, or the sidebar with *Show in

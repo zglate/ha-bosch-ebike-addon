@@ -1,5 +1,5 @@
 name: Bosch eBike
-version: "0.7.0"
+version: "0.7.1"
 slug: bosch_ebike_ldi
 description: >-
   VERY EARLY TEST BUILD, don't use yet. Live data and diagnostics from a

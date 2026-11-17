@@ -165,7 +165,7 @@ class Harness:
     def stop_bridge(self):
         """Stop the add-on like a restart would (its state dir is kept)."""
         self.bridge.terminate()
-        self.bridge.wait(timeout=10)
+        self.bridge.wait(timeout=30)              # ARM emulation is slow
 
     def state(self):
         return json.loads(self.control.State())

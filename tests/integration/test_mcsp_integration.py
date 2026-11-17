@@ -768,3 +768,23 @@ def test_a_peek_understands_not_charging_sent_as_an_empty_value(harness):
     harness.control.Advertise(BIKE, ADVERT, True)
     end = window_end(harness)
     assert end["outcome"].startswith("not charging") and end["seconds"] < 10
+
+
+def test_the_page_keeps_the_last_full_reading_after_a_restart(harness):
+    harness.control.EnableMcsp(BIKE, bike_values(charging=True))
+    harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": BIKE}], env=PEEK)
+    harness.control.Advertise(BIKE, ADVERT, True)
+    assert window_end(harness, timeout=60)["outcome"] == "replies"
+    harness.stop_bridge()
+    harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": BIKE}], env=PEEK,
+                         wait=False)
+
+    def bike():
+        try:
+            state = json.loads(urllib.request.urlopen("http://127.0.0.1:8099/api/state",
+                                                      timeout=2).read())
+            return next(iter(state.get("bikes", [])), None)
+        except OSError:
+            return None
+    after = wait_for(lambda: (b := bike()) and b.get("last_good") and b, "page after restart")
+    assert after["mcsp"].get("charge_cycles") is not None and after["model"]
