@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.5.0 – connect like the Flow app
+
+What the first real bike showed: the LDI works (battery, odometer, speed,
+cadence, rider power, light, lock, charger), but MCSP sent nothing at all on
+the link the bike opened for the LDI. The Flow app connects the other way
+round, so:
+
+- **New button: Connect like the Flow app.** Pauses the LDI (advertising off,
+  link dropped), connects to the bike on its next advertisement as the phone
+  does, runs MCSP, then disconnects and advertises again so the LDI comes
+  back. At most 5 minutes; advertising is always restored; no pairing
+  accepted meanwhile. A notification gives the result. It repeats every
+  `mcsp_reconnect_hours` only once a bike has answered this way.
+- **MCSP stops when the bike is silent**: after 20 unanswered requests with
+  nothing at all received, instead of timing out ~700 reads. Not recorded as
+  a completed sweep. Status says *MCSP not answering on this link*.
+- Bike Status shows how many datapoints answered while exploring.
+- **Who opened a link is measured** (the add-on's connect call came before
+  BlueZ reported it connected), not assumed: the first real link was opened
+  by the bike but logged as the add-on's. Bikes that connect to us for the
+  LDI are never connected to automatically.
+- The transport handshake goes out in one write, as the Flow app does.
+- **Download debug captures from the app's Open web UI page**, no Samba or SSH.
+- *Last Seen* updates at most once a minute (it flooded the logbook).
+
+## 0.4.3
+
+- **Fixed: a bike standing still was heard once, then never again.** BlueZ
+  only reports a device again when its signal moves by 8 dBm or more, unless
+  the scan has a signal-strength filter. Scans now use one that lets
+  everything through, so every advertisement counts (and Pair selected bike
+  pairs on the next one).
+- The log shows when a bike's advertising flags change (limited vs general
+  discoverable; may tell pairing mode apart).
+
 ## 0.4.2
 
 - **Fixed: notifications never appeared, silently.** A refused notification

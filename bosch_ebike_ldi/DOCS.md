@@ -92,15 +92,35 @@ added in the Flow app:
 Optional: list the bike under the `bikes` option to give it a name or its
 own `battery_wh`.
 
+### Connect like the Flow app (for the MCSP data)
+
+On the first real bike, MCSP (motor power, assist mode, battery health,
+cycles, temperature, motor hours, firmware versions) stayed silent on the link
+the bike opens for the LDI: the bike sent nothing at all. The Flow app
+connects the other way round: the phone connects *to* the bike. To try that:
+
+1. Bike switched on and standing still, LDI connected.
+2. Press **Connect like the Flow app** on the *Bosch eBike Bridge* device.
+3. The app pauses the LDI (stops advertising, drops the link), connects to the
+   bike on its next advertisement, and runs MCSP. The bike's **Status** shows
+   *Checking MCSP like the Flow app: …*.
+4. When done (at most 5 minutes) it disconnects and advertises again; the LDI
+   reconnects by itself. A notification shows the result.
+
+If the bike answered, the app repeats this every `mcsp_reconnect_hours`
+(default 6) while the bike is connected and standing still. Otherwise it
+never drops the LDI by itself. No pairing is accepted during the check.
+
 ## Your first test session
 
 1. Start the add-on with default options and add the bike as above.
 2. Leave the bike **switched on and standing still** next to the host for
    about **10 minutes**. The first time, the add-on reads the Flow app's
    start-up set, then sweeps every readable datapoint (~700), gently paced.
-   Watch the bike's **Status** entity: `Exploring (MCSP): reading start-up
-   set` → `Exploring (MCSP): sweeping datapoints, 40 %` → `Released for the
-   Flow app; next check after 19:40`. *MCSP Status* has the detail.
+   Watch the bike's **Status** entity, for example `Exploring (LDI + MCSP):
+   sweeping datapoints, 40 %, 12 answered`. If it says *MCSP not answering on
+   this link*, press **Connect like the Flow app** (above). *MCSP Status* has
+   the detail.
 3. Also try: plugging the charger in for a few minutes, and pressing the
    assist +/- buttons (no need to ride).
 4. Switch the bike off. Then send back the run folder (see below).
@@ -111,15 +131,16 @@ update; the **Run MCSP read sweep** button forces one).
 
 ### What to send back
 
-Everything is in **`/share/bosch_ebike/run-<date>-<time>/`** (the `share`
-folder of the Samba share):
+Open the app's page (**Settings → Apps → Bosch eBike**) and press **Open web
+UI**: it lists the runs, newest first, each as a zip download. (They are in
+`/share/bosch_ebike/run-<date>-<time>/`.) Each contains:
 
 - `report.json`: the summary. Add-on version and options (no passwords),
   adapter, what the bike advertised, its Bluetooth services, every
   datapoint's value or error code, the session's milestones and timings.
 - `capture-001.jsonl` …: every byte sent and received, with timestamps.
 
-Zip the run folder and send it, along with the add-on **Log** and anything
+Send the zip along with the add-on **Log** and anything
 you noticed (for example: did the Flow app still connect afterwards?).
 
 ## What it reads, and what it never does
@@ -187,8 +208,8 @@ of them.
 A value the bike hasn't sent shows as *unknown*, never as zero or off.
 
 **Bridge device:** *Setup Status*, *Nearby Bosch eBikes*, **Pair selected
-bike**, **Start pairing**, **Forget paired bikes**, **Run MCSP read sweep**,
-*Pairing Active*.
+bike**, **Start pairing**, **Connect like the Flow app**, **Forget paired
+bikes**, **Run MCSP read sweep**, *Pairing Active*.
 
 ## Useful Home Assistant helpers
 

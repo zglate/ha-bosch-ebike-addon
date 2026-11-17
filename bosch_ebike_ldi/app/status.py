@@ -66,22 +66,33 @@ For the official live-data feed (LDI), also press **Start pairing** and add *HA 
 
 
 def bike_status(ldi: bool, mcsp: dict | None, released_until: float | None,
-                last_seen: str | None, now: float) -> tuple[str, dict]:
-    """Returns (state, attributes) for one bike."""
+                last_seen: str | None, now: float, window_phase: str | None = None,
+                last_check: dict | None = None) -> tuple[str, dict]:
+    """Returns (state, attributes) for one bike.
+
+    `window_phase`: "Connect like the Flow app" is running (LDI paused).
+    `last_check`: outcome and time of the last such check.
+    """
     mcsp = mcsp or {}
     mcsp_state = mcsp.get("state", "")
-    mcsp_live = bool(mcsp_state) and not any(
+    silent = mcsp_state.startswith("bike not answering")
+    mcsp_live = bool(mcsp_state) and not silent and not any(
         mcsp_state.startswith(s) for s in ("stopped", "disconnected", "add-on stopped",
                                            "restarted", "MCSP not exposed",
                                            "MCSP disabled"))
     links = " + ".join(n for n, on in (("LDI", ldi), ("MCSP", mcsp_live)) if on)
-    if mcsp_live and mcsp_state.startswith("sweeping"):
+    answered = mcsp.get("values") or 0
+    if window_phase:
+        state = f"Checking MCSP like the Flow app: {window_phase} (LDI paused)"
+    elif mcsp_live and mcsp_state.startswith("sweeping"):
         total, done = mcsp.get("sweep_total") or 0, mcsp.get("sweep_done") or 0
         pct = round(100 * done / total) if total else 0
-        state = f"Exploring ({links}): sweeping datapoints, {pct} %"
+        state = f"Exploring ({links}): sweeping datapoints, {pct} %, {answered} answered"
     elif mcsp_live and mcsp_state.startswith(("reading", "listening", "handshake",
                                               "starting", "bike not ready")):
-        state = f"Exploring ({links}): {mcsp_state}"
+        state = f"Exploring ({links}): {mcsp_state}, {answered} answered"
+    elif silent and links:
+        state = f"Connected ({links}); MCSP not answering on this link"
     elif links:
         state = f"Connected ({links})"
     elif released_until and released_until > now:
@@ -96,5 +107,6 @@ def bike_status(ldi: bool, mcsp: dict | None, released_until: float | None,
     attributes = {"ldi_connected": ldi, "mcsp_state": mcsp_state or None,
                   "mcsp_values": mcsp.get("values"), "last_seen": last_seen,
                   "released_until": (datetime.fromtimestamp(released_until).isoformat()
-                                     if released_until else None)}
+                                     if released_until else None),
+                  "mcsp_check": last_check}
     return state[:255], attributes

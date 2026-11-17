@@ -16,6 +16,7 @@ notifications, ask the agent to pair, and read back everything the bridge did.
 Run: DBUS_SYSTEM_BUS_ADDRESS=... python3 fake_bluez.py
 """
 import json
+import time
 
 import dbus
 import dbus.mainloop.glib
@@ -97,6 +98,7 @@ class Adapter(BluezObject):
         # call here deadlocks against the bridge's own synchronous calls).
         def got(props):
             STATE["advertisements"].append({str(k): plain(v) for k, v in props.items()})
+            STATE["advert_times"].append(time.time())
             reply()
 
         adv = dbus.Interface(BUS.get_object(sender, path), PROPS)
@@ -109,6 +111,7 @@ class Adapter(BluezObject):
     @dbus.service.method("org.bluez.Adapter1", in_signature="a{sv}")
     def SetDiscoveryFilter(self, properties):
         STATE["discovery"].append(["filter", {str(k): str(v) for k, v in properties.items()}])
+        STATE["proximity_filter"] = "RSSI" in properties or "Pathloss" in properties
 
     @dbus.service.method("org.bluez.Adapter1")
     def StartDiscovery(self):
@@ -179,6 +182,14 @@ class FakeMcspBike:
         self.only_src = int(config["only_src"], 16) if config.get("only_src") else None
         self.starts_handshake = config.get("starts_handshake", True)
         self.not_ready_left = config.get("not_ready_requests", 0)
+        # The leading hypothesis from the first real bike: MCSP only answers on
+        # a connection the phone (central) opened, not on the LDI link the bike
+        # opened. With this option the fake bike is silent on bike-opened links.
+        self.answers_only_app_links = config.get("answers_only_app_links", False)
+        self.link_by_us = False         # set by Control.connect: who opened the link
+
+    def _silent(self):
+        return self.answers_only_app_links and not self.link_by_us
 
     # Frames: [channel<<5 | end<<4 | len>>8][len & 0xff] payload
     def send(self, channel, payload):
@@ -191,6 +202,8 @@ class FakeMcspBike:
         return False
 
     def on_notify_start(self):
+        if self._silent():
+            return False
         if self.starts_handshake:
             self.send(0, b"\x01\x03")                     # VERSION 3
             self.send(0, b"\x04\x00\xb4")                 # MAX_SEGMENTATION 180
@@ -203,9 +216,19 @@ class FakeMcspBike:
         return False
 
     def on_write(self, data):
+        """One write may carry several frames (the handshake does)."""
+        while len(data) >= 2:
+            length = ((data[0] & 0x0F) << 8) | data[1]
+            self._on_frame(data[:2 + length])
+            data = data[2 + length:]
+
+    def _on_frame(self, data):
         channel, length = data[0] >> 5, ((data[0] & 0x0F) << 8) | data[1]
         payload = data[2:2 + length]
         log = MCSP_LOG
+        if self._silent():
+            log.setdefault("ignored", []).append(data.hex())
+            return
         if channel == 0:
             log["commands"].append(payload.hex())
             return
@@ -297,7 +320,7 @@ class Device(BluezObject):
     @dbus.service.method("org.bluez.Device1")
     def Connect(self):
         STATE["connect_calls"].append(self.path)
-        GLib.idle_add(lambda: CONTROL.connect(self, resolve=True) or False)
+        GLib.idle_add(lambda: CONTROL.connect(self, resolve=True, by_us=True) or False)
 
     @dbus.service.method("org.bluez.Device1", async_callbacks=("reply", "error"))
     def Pair(self, reply, error):
@@ -305,7 +328,8 @@ class Device(BluezObject):
         reply. Like the kernel: a bond is only stored if the adapter is
         bondable (Pairable) at that moment."""
         STATE["pair_calls"].append(self.path)
-        CONTROL.connect(self, resolve=True)
+        CONTROL.connect(self, resolve=True,
+                        by_us=not self.interfaces["org.bluez.Device1"]["Connected"])
 
         def finish():
             if self.path in STATE["fail_pair"]:
@@ -374,9 +398,14 @@ class Control(dbus.service.Object):
             ROOT.add(tx)
             self.bikes[device.interfaces["org.bluez.Device1"]["Address"]] = bike
 
-    def connect(self, device, resolve):
+    def connect(self, device, resolve, by_us=False):
         if device.is_bike:
             self._gatt(device)
+            bike = self.bikes.get(device.interfaces["org.bluez.Device1"]["Address"])
+            if bike is not None and not device.interfaces["org.bluez.Device1"]["Connected"]:
+                bike.link_by_us = by_us
+                STATE["links"].append({"address": device.interfaces["org.bluez.Device1"]
+                                       ["Address"], "by_us": by_us})
         device.update("org.bluez.Device1", Connected=True)
         if resolve:
             device.update("org.bluez.Device1", ServicesResolved=True)
@@ -394,6 +423,8 @@ class Control(dbus.service.Object):
             ROOT.add(device)
             return
         device = ROOT.objects[path]
+        if not STATE["proximity_filter"]:
+            return      # BlueZ: a 1 dBm change is below RSSI_THRESHOLD (8): no signal
         rssi = int(device.interfaces["org.bluez.Device1"].get("RSSI", -66))
         device.update("org.bluez.Device1", RSSI=dbus.Int16(-67 if rssi == -66 else -66))
 
@@ -429,8 +460,10 @@ class Control(dbus.service.Object):
             return
         device = ROOT.objects[path]
         rssi = int(device.interfaces["org.bluez.Device1"].get("RSSI", -60))
-        device.update("org.bluez.Device1", RSSI=dbus.Int16(-61 if rssi == -60 else -60),
-                      ManufacturerData=data)
+        new_rssi = -61 if rssi == -60 else -60
+        if not STATE["proximity_filter"]:
+            new_rssi = rssi     # BlueZ: below RSSI_THRESHOLD (8): RSSI not signalled
+        device.update("org.bluez.Device1", RSSI=dbus.Int16(new_rssi), ManufacturerData=data)
 
     @dbus.service.method("test.FakeBluez", in_signature="sbbay")
     def Connect(self, address, is_bike, resolve, snapshot):
@@ -513,7 +546,7 @@ STATE = {"advertisements": [], "unregistrations": 0, "removed_devices": [],
          "notify_started": [], "property_sets": [], "agent_errors": [],
          "default_agent": None, "agent_capability": None,
          "agent_registrations": 0, "gatt_writes": [], "connect_calls": [],
-         "pair_calls": [], "pair_bondable": [], "fail_pair": [],"disconnect_calls": [], "discovery": []}
+         "pair_calls": [], "pair_bondable": [], "fail_pair": [], "proximity_filter": False, "links": [], "advert_times": [],"disconnect_calls": [], "discovery": []}
 MCSP_LOG = {"commands": [], "messages": []}
 
 if __name__ == "__main__":

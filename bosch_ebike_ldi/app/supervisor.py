@@ -152,6 +152,18 @@ the **top bar of its charge indicator flashes blue**. Then pick it in \
 **Nearby Bosch eBikes** on {bridge} and press **Pair selected bike** again.
 """
 
+MCSP_CHECK = """\
+**Connect like the Flow app** finished for `{address}`: *{outcome}*.
+
+LDI (the live-data feed) reconnects by itself. The check {next}.
+
+- *replies*: the bike talks MCSP when the add-on connects the way the app \
+does; its extra data (motor power, battery health ...) appears on the bike's \
+device.
+- anything else: send the add-on log and the latest capture (the app's \
+**Open web UI** page has a download link).
+"""
+
 BIKE_FOUND = """\
 **{name}** connected over Bluetooth (address `{address}`). It's remembered \
 and reconnects by itself; nothing else is needed.

@@ -81,7 +81,7 @@ def test_bike_status_texts():
     assert status.bike_status(True, None, None, "x", now)[0] == "Connected (LDI)"
     sweeping = {"state": "sweeping 600 datapoints", "sweep_total": 600, "sweep_done": 150}
     assert status.bike_status(True, sweeping, None, "x", now)[0] == (
-        "Exploring (LDI + MCSP): sweeping datapoints, 25 %")
+        "Exploring (LDI + MCSP): sweeping datapoints, 25 %, 0 answered")
     idle = {"state": "idle (sweep complete)"}
     assert status.bike_status(False, idle, None, "x", now)[0] == "Connected (MCSP)"
     stopped = {"state": "disconnected"}
@@ -157,3 +157,20 @@ def test_released_status_names_the_day_when_not_today():
     later, _ = status.bike_status(False, None, now + 30 * 3600, "x", now)
     assert today.endswith("after 19:00")
     assert later.endswith("after Wed 00:00")
+
+
+
+def test_bike_status_for_the_flow_app_check_and_silent_mcsp():
+    state, attrs = status.bike_status(False, None, None, "x", 0.0,
+                                      window_phase="connecting (as the Flow app does)",
+                                      last_check={"outcome": "replies", "at": "t"})
+    assert state == ("Checking MCSP like the Flow app: connecting (as the Flow app does) "
+                     "(LDI paused)")
+    assert attrs["mcsp_check"]["outcome"] == "replies"
+    silent, _ = status.bike_status(True, {"state": "bike not answering MCSP on this connection"},
+                                   None, "x", 0.0)
+    assert silent == "Connected (LDI); MCSP not answering on this link"
+    sweeping, _ = status.bike_status(True, {"state": "sweeping 694 datapoints",
+                                            "sweep_total": 694, "sweep_done": 300,
+                                            "values": 0}, None, "x", 0.0)
+    assert sweeping == "Exploring (LDI + MCSP): sweeping datapoints, 43 %, 0 answered"

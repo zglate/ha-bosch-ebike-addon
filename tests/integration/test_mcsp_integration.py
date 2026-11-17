@@ -296,7 +296,8 @@ def test_scans_by_itself_while_no_bike_is_connected(harness):
     harness.start_bridge(open_pairing_on_start=False)
     log = wait_for(lambda: (d := harness.state()["discovery"]) and ["stop"] in d and d,
                    "a short scan", timeout=10)
-    assert ["filter", {"Transport": "le"}] in log and ["start"] in log
+    # The RSSI filter makes BlueZ report every advert (not only 8 dBm changes).
+    assert ["filter", {"Transport": "le", "RSSI": "-127"}] in log and ["start"] in log
     # The result is visible in the add-on log, not only in the capture.
     wait_for(lambda: "Scan done: no Bosch eBike heard" in harness.bridge_log.read_text(),
              "scan summary in the log")
@@ -612,3 +613,92 @@ def test_waiting_for_a_quiet_bike_gives_up_and_says_so(harness):
         assert harness.state()["pair_calls"] == []
     finally:
         sup.server.shutdown()
+
+
+# ── "Connect like the Flow app" ─────────────────────────────────────────────
+
+from datetime import datetime  # noqa: E402
+
+ADVERT = dbus.ByteArray(bytes([0, 0, 2, 0x21, 1, 0]))
+FAST = {"BOSCH_MCSP_TIMEOUT_MS": "200", "BOSCH_WINDOW_SEC": "40",
+        "BOSCH_MCSP_REFRESH_MS": "1000"}       # the 10-min refresh, due quickly
+
+
+def events(harness, kind):
+    return [e for e in harness.capture_events() if e["kind"] == kind]
+
+
+def test_mcsp_silent_on_the_ldi_link_stops_after_twenty_unanswered_requests(harness):
+    """The first real bike: on the link it opened for LDI, MCSP sent nothing."""
+    harness.control.EnableMcsp(BIKE, json.dumps({"values": VALUES,
+                                                 "answers_only_app_links": True}))
+    harness.start_bridge(open_pairing_on_start=False, env=FAST)
+    harness.control.Connect(BIKE, True, True, dbus.ByteArray(SNAPSHOT))
+    wait_for(lambda: status(harness).get("state")
+             == "bike not answering MCSP on this connection", "gave up", timeout=20)
+    assert events(harness, "bike_connected")[0]["opened_by"] == "bike"
+    sent = status(harness)["requests_sent"]
+    assert sent <= 24                                   # 20 + at most 4 in flight
+    time.sleep(3)                                       # past the (1 s) refresh timer
+    assert status(harness)["requests_sent"] == sent     # and nothing more
+    assert len(events(harness, "milestone")) == len(
+        [e for e in events(harness, "milestone")])      # (capture readable)
+    assert sum(e["name"] == "silent" for e in events(harness, "milestone")) == 1
+    assert "sweep_done" not in status(harness)["milestones"]
+    bike_status = wait_for(lambda: (harness.mqtt.json(f"bosch_ebike/{SLUG}/status") or {})
+                           .get("state", "").endswith("MCSP not answering on this link"),
+                           "status says so")
+    assert bike_status
+
+
+def test_connect_like_the_flow_app_pauses_ldi_and_reaches_mcsp(harness):
+    harness.control.EnableMcsp(BIKE, json.dumps({"values": VALUES,
+                                                 "answers_only_app_links": True}))
+    harness.start_bridge(open_pairing_on_start=False, env=FAST)
+    harness.control.Connect(BIKE, True, True, dbus.ByteArray(SNAPSHOT))   # the bike: LDI
+    wait_for(lambda: status(harness).get("state")
+             == "bike not answering MCSP on this connection", "silent on LDI", timeout=20)
+    adverts = len(harness.state()["advertisements"])
+
+    harness.mqtt.client.publish("bosch_ebike/bridge/mcsp_window/set", "PRESS")
+    wait_for(lambda: events(harness, "mcsp_window_start"), "window started")
+    wait_for(lambda: harness.state()["disconnect_calls"], "LDI link dropped")
+    harness.control.Advertise(BIKE, ADVERT, True)                         # bike advertises
+    wait_for(lambda: harness.state()["connect_calls"], "connects as central")
+    wait_for(lambda: events(harness, "window_replies"), "the bike answers", timeout=20)
+    end = wait_for(lambda: events(harness, "mcsp_window_end"), "window done", timeout=40)[0]
+    assert end["outcome"] == "replies"
+    # Not advertising during the window (else the bike could reconnect for LDI).
+    start_t = datetime.fromisoformat(events(harness, "mcsp_window_start")[0]["t"]).timestamp()
+    end_t = datetime.fromisoformat(end["t"]).timestamp()
+    assert not [t for t in harness.state()["advert_times"] if start_t < t < end_t]
+    assert [link["by_us"] for link in harness.state()["links"]] == [False, True]
+    assert events(harness, "bike_connected")[-1]["opened_by"] == "add-on"
+    wait_for(lambda: len(harness.state()["advertisements"]) > adverts, "advertising again")
+    assert status(harness)["values"] > 0
+    # Afterwards the bike reconnects for LDI: that link is the bike's, not ours.
+    wait_for(lambda: not harness.state()["links"] or True, "")
+    harness.control.Disconnect(BIKE)
+    time.sleep(0.5)
+    harness.control.Connect(BIKE, True, True, dbus.ByteArray(SNAPSHOT))
+    wait_for(lambda: len(events(harness, "bike_connected")) >= 3, "LDI back")
+    assert events(harness, "bike_connected")[-1]["opened_by"] == "bike"
+
+
+def test_connect_like_the_flow_app_gives_up_and_restores_advertising(harness):
+    harness.control.EnableMcsp(BIKE, json.dumps({"values": VALUES,
+                                                 "answers_only_app_links": True}))
+    harness.start_bridge(open_pairing_on_start=False,
+                         env={**FAST, "BOSCH_WINDOW_SEC": "3"})
+    harness.control.Connect(BIKE, True, True, dbus.ByteArray(SNAPSHOT))
+    wait_for(lambda: events(harness, "bike_connected"), "LDI link")
+    adverts = len(harness.state()["advertisements"])
+    harness.mqtt.client.publish("bosch_ebike/bridge/mcsp_window/set", "PRESS")
+    end = wait_for(lambda: events(harness, "mcsp_window_end"), "window ends", timeout=15)[0]
+    assert end["outcome"] == "no advertisement heard from the bike"
+    wait_for(lambda: len(harness.state()["advertisements"]) > adverts, "advertising again")
+    # A bike that connects to us for LDI is never connected to automatically.
+    harness.control.Advertise(BIKE, ADVERT, True)
+    harness.control.Advertise(BIKE, ADVERT, True)
+    time.sleep(2)
+    assert harness.state()["connect_calls"] == []

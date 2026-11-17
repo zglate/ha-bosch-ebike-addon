@@ -133,6 +133,7 @@ class Hooks:
     def on_sweep_done(self, firmware: str | None) -> None: ...
     def is_moving(self) -> bool: return False
     def on_release(self) -> None: ...
+    def on_silent(self) -> None: ...
 
 
 class BikeExplorer:
@@ -257,7 +258,10 @@ class McspSession:
 
     HANDSHAKE_WAIT_MS = 1500      # wait for the bike to start the handshake
     SETTLE_MS = 500               # pause between handshake and first requests
-    REQUEST_TIMEOUT_MS = 4000
+    REQUEST_TIMEOUT_MS = int(os.environ.get("BOSCH_MCSP_TIMEOUT_MS", "4000"))   # env: tests
+    # Give up when this many requests in a row time out and the bike has never
+    # sent a single byte on this connection: it isn't talking MCSP here.
+    SILENT_AFTER_TIMEOUTS = 20
     MAX_IN_FLIGHT = 4
     # Minimum spacing between requests. Overridable only so tests run fast.
     SEND_GAP_MS = int(os.environ.get("BOSCH_MCSP_SEND_GAP_MS", "25"))
@@ -265,7 +269,7 @@ class McspSession:
     NOT_READY_RETRY_MS = 10_000
     NOT_READY_RETRIES = 3
     MOVING_CHECK_MS = 5000        # how often a paused sweep checks again
-    REFRESH_MS = 10 * 60 * 1000   # re-read the curated set while connected
+    REFRESH_MS = int(os.environ.get("BOSCH_MCSP_REFRESH_MS", str(10 * 60 * 1000)))  # env: tests
     RELEASE_AFTER_MS = int(os.environ.get("BOSCH_MCSP_RELEASE_MS", str(5 * 60 * 1000)))
     STATUS_EVERY_MS = 1000
     MIN_GOOD_MTU = 188            # spec minimum ATT MTU 185 + 3
@@ -284,6 +288,8 @@ class McspSession:
         self._pump_timer = self._release_timer = None
         self._match = None
         self._handshake_sent = self._requests_started = self._swept = False
+        self.silent = False
+        self._silent_timeouts = 0
         self._status_scheduled = False
         self._not_ready_rounds = 0
         self._max_in_flight = self.MAX_IN_FLIGHT
@@ -367,8 +373,15 @@ class McspSession:
 
     def _send_handshake(self) -> None:
         self._handshake_sent = True
-        for f in mcsp.handshake(self.status["packet_size"]):
-            self._send_frames(mcsp.COMMAND_CHANNEL, f[2:])
+        frames = mcsp.handshake(self.status["packet_size"])
+        for f in frames:
+            mcsp.check_outgoing(mcsp.COMMAND_CHANNEL, f[2:])      # read-only, always
+        data = b"".join(frames)
+        if len(data) <= self.status["packet_size"]:
+            self._write(data)
+        else:
+            for f in frames:
+                self._write(f)
         self._milestone("handshake_sent")
         self._set_state("handshake sent")
         self._after(self.SETTLE_MS, self._start_requests)
@@ -394,6 +407,10 @@ class McspSession:
 
     def sweep(self, forced: bool = False) -> int:
         """Read every readable datapoint that hasn't returned a value yet."""
+        if self.silent:
+            log.warning("[%s] Not sweeping: the bike isn't answering MCSP on this connection",
+                        self.address)
+            return 0
         ids = [i for i, dp in sorted(self._table.items())
                if dp.readable and i not in self.answered
                and (mcsp.READ, i) not in self._queued]
@@ -472,6 +489,8 @@ class McspSession:
 
     def _enqueue(self, op: int, dp: int, src: int, phase: str, tries: int = 0,
                  front: bool = False) -> None:
+        if self.silent:
+            return
         entry = self._table.get(dp)
         if entry is None or not entry.readable:
             self.status["skipped_not_readable"] += 1
@@ -552,8 +571,32 @@ class McspSession:
             return
         self.status["timeouts"] += 1
         self._record(item["dp"], self._source(item), status=None)
+        if "first_rx" not in self.status["milestones"]:
+            self._silent_timeouts += 1
+            if self._silent_timeouts >= self.SILENT_AFTER_TIMEOUTS:
+                self._go_silent()
+                return
         self._finish(item)
         self._pump()
+
+    def _go_silent(self) -> None:
+        """Nothing at all has come back: stop asking. Not a completed sweep."""
+        self.silent = True
+        for timer in list(self._timers):         # refresh, pump, request timeouts ...
+            GLib.source_remove(timer)
+        self._timers.clear()
+        self._release_timer = None
+        self._pending.clear()
+        self._queue.clear()
+        self._queued.clear()
+        self._outstanding.clear()
+        self._cancel(self._pump_timer)
+        self._pump_timer = None
+        log.warning("[%s] MCSP: %d requests in a row got no answer and the bike has sent "
+                    "nothing on this connection; stopping", self.address, self._silent_timeouts)
+        self._milestone("silent")
+        self._set_state("bike not answering MCSP on this connection")
+        self._hooks.on_silent()
 
     @staticmethod
     def _source(item: dict) -> str:
