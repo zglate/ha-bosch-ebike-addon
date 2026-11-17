@@ -47,14 +47,33 @@ def decode_value(dp: Datapoint | None, body: bytes) -> Any:
     Returns None for an empty payload (absent value), never a fake zero.
     """
     if not body:
-        return None
+        # An all-default message is zero bytes on the wire: that's a value ({}).
+        return {} if dp is not None and dp.kind == "struct" else None
     if dp is None or dp.kind == "struct":
         return protowire.to_plain(body)
-    values = [f.value for f in protowire.decode(body) if f.number == 1]
+    values = []
+    for f in protowire.decode(body):
+        if f.number != 1:
+            continue
+        if isinstance(f.value, (bytes, bytearray)) and dp.kind.rstrip("[]") != "string":
+            values += _unpack_varints(bytes(f.value))      # packed repeated numbers
+        else:
+            values.append(f.value)
     converted = [_convert(dp, v) for v in values]
     if dp.kind.endswith("[]"):
         return converted
     return converted[-1] if converted else None   # last value wins (protobuf)
+
+
+def _unpack_varints(data: bytes) -> list[int]:
+    out, value, shift = [], 0, 0
+    for byte in data:
+        value |= (byte & 0x7F) << shift
+        shift += 7
+        if not byte & 0x80:
+            out.append(value)
+            value, shift = 0, 0
+    return out
 
 
 def _convert(dp: Datapoint, value):
@@ -184,8 +203,10 @@ ENTITIES = [
            "measurement"),
     Entity(0x00A0, "battery_temperature_max", "Battery Max Temperature (raw)"),
     Entity(0x00A1, "battery_temperature_min", "Battery Min Temperature (raw)"),
-    Entity(0x00D2, "battery_fet_temperature", "Battery FET Temperature (raw)"),
-    Entity(0x1884, "drive_pcb_temperature", "Drive Unit PCB Temperature (raw)"),
+    Entity(0x00D2, "battery_fet_temperature", "Battery FET Temperature", "°C",
+           "temperature", "measurement"),
+    Entity(0x1884, "drive_pcb_temperature", "Drive Unit Temperature", "°C",
+           "temperature", "measurement"),
     Entity(0x00D8, "battery_health", "Battery State of Health", "%", None, "measurement"),
     Entity(0x0096, "charge_cycles", "Charge Cycles", None, None, "total_increasing"),
     Entity(0x00B0, "charge_cycles_on_bike", "Charge Cycles on Bike", None, None,
@@ -197,8 +218,16 @@ ENTITIES = [
            "measurement"),
     Entity(0x00D9, "system_usable_energy", "System Usable Energy", "Wh", "energy_storage",
            "measurement"),
-    Entity(0x0091, "remaining_energy_raw", "Remaining Energy for Rider (raw)"),
-    Entity(0x009C, "lifetime_delivered_wh_raw", "Lifetime Delivered Energy (raw)"),
+    Entity(0x0091, "remaining_energy", "Remaining Energy for Rider", "Wh",
+           "energy_storage", "measurement"),
+    Entity(0x009C, "lifetime_delivered_wh", "Lifetime Delivered Energy", "Wh", "energy",
+           "total_increasing"),
+    Entity(0x00D7, "lifetime_delivered_ah", "Lifetime Delivered Charge", "Ah", None,
+           "total_increasing"),
+    # chargingSettings {1: mode, 2: limit %}: the bike's own charging setting
+    # (set in the Flow app if Bosch offers it there; never written by the add-on).
+    Entity(0x00E5, "charging_mode", "Charging Mode"),
+    Entity(0x00E5, "charge_limit", "Charge Limit", "%"),
     Entity(0x008A, "charging_active", "Charging Active"),
     Entity(0x008C, "battery_voltage_raw", "Battery Voltage (raw)"),
     Entity(0x0094, "discharge_current_raw", "Discharge Current (raw)", live=True),
@@ -211,7 +240,24 @@ ENTITIES = [
     Entity(0x206B, "controller_software", "Controller Software"),
     Entity(0x0D06, "head_unit_software", "Head Unit Software"),
     Entity(0x20E2, "update_ready_for_install", "Update Ready for Install (raw)"),
+    Entity(0x2151, "active_issue_raw", "Active Issue (raw)"),
 ]
+
+
+CHARGING_MODES = {0: "Charge-time optimised", 1: "Battery-lifetime optimised"}
+
+
+def charging_setting(key: str, value: Any) -> Any:
+    """chargingSettings = {1: charging_mode, 2: charging_limit_soc} (Bosch's
+    ChargingSettings message). A missing limit means none set: unknown."""
+    if not isinstance(value, dict):
+        return None
+    field = value.get(1, value.get("1")) if key == "charging_mode" else value.get(
+        2, value.get("2"))
+    if key == "charging_mode":
+        field = field if field is not None else 0       # proto3: absent = first value
+        return CHARGING_MODES.get(field, f"mode {field}")
+    return field
 
 
 STARTUP_STAGE = 0x40A9          # the bike writes its startup stage to the "phone"
@@ -221,9 +267,12 @@ DRIVE_UNIT_SOFTWARE = 0x1806
 
 def entity_state(entity: Entity, value: Any, names: list[str] | None = None) -> Any:
     """The HA state for an entity value. Assist mode shows its name if known."""
+    if entity.key in ("charging_mode", "charge_limit"):
+        return charging_setting(entity.key, value)
     if entity.id == 0x1809 and isinstance(value, int) and names:
         if 0 <= value < len(names) and names[value]:
             return names[value]
     if isinstance(value, (dict, list)):
-        return json.dumps(value)[:255]
+        return json.dumps(value, default=lambda v: v.hex() if isinstance(
+            v, (bytes, bytearray)) else str(v))[:255]
     return value

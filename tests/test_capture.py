@@ -88,3 +88,21 @@ def test_unwritable_directory_disables_capture(tmp_path):
     blocker.write_text("x")
     cap = Capture(str(blocker / "sub"))        # parent is a file
     assert not cap.enabled
+
+
+def test_a_failing_capture_write_stops_the_capture_instead_of_raising(tmp_path):
+    from capture import Capture
+
+    capture = Capture(str(tmp_path))
+
+    class Broken:
+        def write(self, _):
+            raise OSError(28, "No space left on device")
+
+        def close(self):
+            pass
+
+    capture._file = Broken()
+    capture.event("rx", data=b"\x01")          # must not raise
+    assert capture._file is None
+    capture.event("rx", data=b"\x02")          # and stays quiet afterwards

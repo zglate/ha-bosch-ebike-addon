@@ -197,7 +197,10 @@ class BikeExplorer:
     def _status_only(self, state: str) -> None:
         log.info("[%s] %s", self.address, state)
         self._capture.bike(self.address)["mcsp"] = {"state": state}
-        self._hooks.on_status({"state": state})
+        try:
+            self._hooks.on_status({"state": state})
+        except Exception as exc:
+            log.error("[%s] on_status failed: %s", self.address, exc)
 
     def _read(self, path: str, key: str, iface: str, name: str) -> None:
         gatt = self._capture.bike(self.address).setdefault("gatt_values", {})
@@ -424,7 +427,7 @@ class McspSession:
     def _phase_done(self, phase: str) -> None:
         if phase == "sweep":
             self._milestone("sweep_done")
-            self._hooks.on_sweep_done(self.firmware)
+            self._call_hook("on_sweep_done", self.firmware)
             self._set_state("idle (sweep complete)")
             self._schedule_release()
             return
@@ -465,7 +468,8 @@ class McspSession:
         if not any(k.startswith("READ") for k in ok):
             self._set_state("idle (no read succeeded, sweep skipped)")
             self._schedule_release()
-        elif self._swept or not self._hooks.should_sweep(self.firmware):
+        elif self._swept or not self._call_hook("should_sweep", self.firmware,
+                                                 default=True):
             self._set_state("idle (sweep already done for this firmware)")
             self._schedule_release()
         else:
@@ -483,7 +487,7 @@ class McspSession:
             self._schedule_release()
             return
         self._milestone("released")
-        self._hooks.on_release()
+        self._call_hook("on_release")
 
     # ── Sending ──────────────────────────────────────────────────────────────
 
@@ -596,7 +600,7 @@ class McspSession:
                     "nothing on this connection; stopping", self.address, self._silent_timeouts)
         self._milestone("silent")
         self._set_state("bike not answering MCSP on this connection")
-        self._hooks.on_silent()
+        self._call_hook("on_silent")
 
     @staticmethod
     def _source(item: dict) -> str:
@@ -697,7 +701,10 @@ class McspSession:
                             dst=f"0x{msg.dst:04X}", op=op, seq=msg.seq, body=msg.body)
         log.info("[%s] Bike asked the app: %s %s", self.address, key, msg.body.hex())
         if msg.dst == STARTUP_STAGE and msg.op == mcsp.WRITE:
-            stage = decode_value(self._table.get(STARTUP_STAGE), msg.body)
+            try:
+                stage = decode_value(self._table.get(STARTUP_STAGE), msg.body)
+            except Exception:                      # malformed: record it raw
+                stage = msg.body.hex()
             if isinstance(stage, dict):           # a one-field message: {1: stage}
                 stage = stage.get(1, stage)
             self.status["startup_stages"].append({"t": round(time.time(), 3),
@@ -739,7 +746,7 @@ class McspSession:
                 self.answered.add(dp_id)
                 self.status["values"] = len(self.answered)
                 log.info("[%s] %s = %s", self.address, label, value)
-            self._hooks.on_value(dp_id, value)
+            self._call_hook("on_value", dp_id, value)
         elif status not in (0, None):
             log.debug("[%s] %s: %s (%s)", self.address, label, status_name, source)
         self._schedule_status()
@@ -748,7 +755,18 @@ class McspSession:
         self.status["state"] = state
         log.info("[%s] MCSP: %s", self.address, state)
         self._capture.bike(self.address)["mcsp"] = self.status
-        self._hooks.on_status(dict(self.status))
+        self._call_hook("on_status", dict(self.status))
+
+    def _call_hook(self, name: str, *args, default=None):
+        """Publishing to Home Assistant must never break the session: an
+        exception here used to skip finishing the request, so the start-up
+        phase never completed (first real bike)."""
+        try:
+            return getattr(self._hooks, name)(*args)
+        except Exception as exc:
+            log.error("[%s] %s failed: %s", self.address, name, exc)
+            self._capture.event("hook_error", bike=self.address, hook=name, error=str(exc))
+            return default
 
     def _schedule_status(self) -> None:
         """Publish status at most once a second (a sweep makes hundreds of changes)."""
@@ -759,5 +777,5 @@ class McspSession:
         def publish():
             self._status_scheduled = False
             self._capture.bike(self.address)["mcsp"] = self.status
-            self._hooks.on_status(dict(self.status))
+            self._call_hook("on_status", dict(self.status))
         self._after(self.STATUS_EVERY_MS, publish)

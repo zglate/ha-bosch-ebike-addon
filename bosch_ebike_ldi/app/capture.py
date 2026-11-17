@@ -84,11 +84,20 @@ class Capture:
             return
         line = json.dumps({"t": now_iso(), "kind": kind, **fields},
                           default=_json_default) + "\n"
-        self._file.write(line)
-        self._file.flush()
-        self._written += len(line)
-        if self._file.tell() > self._file_bytes:
-            self._next_file()
+        try:
+            self._file.write(line)
+            self._file.flush()
+            self._written += len(line)
+            if self._file.tell() > self._file_bytes:
+                self._next_file()
+        except OSError as exc:
+            log.error("Debug capture stopped, cannot write: %s", exc)
+            try:
+                self._file.close()
+            except OSError:
+                pass
+            self._file = None
+            return
         if not self._raw_stopped and self._written > self._raw_limit:
             self._raw_stopped = True
             self.event("raw_capture_stopped", bytes_written=self._written,

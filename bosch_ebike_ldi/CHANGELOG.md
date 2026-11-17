@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.6.0 – MCSP reads that leave the Flow app alone
+
+The first real MCSP session read 125 datapoints (battery health 96 %, 2.4
+cycles, motor hours, temperatures, firmware ...). It also showed that, while
+the add-on was connected the phone way, the Flow app couldn't connect (one
+test; likely one such connection at a time). So:
+
+- **Automatic reads at the right moments only:** about 30 s after the charger
+  is plugged in, and when the battery reaches 100 % (seen through the LDI).
+  The add-on **never connects to the bike by itself otherwise** (it grabbed
+  the bike at every power-on in 0.5). The 6-hourly repeat is gone too.
+- **Fixed: one value could stall a whole read.** Datapoints containing raw
+  bytes crashed when published, before the request was marked done, so the
+  start-up phase never finished. Bytes now publish as hex, and a publishing
+  error can no longer interrupt MCSP.
+- New or now properly-unit'd sensors: Battery FET and Drive Unit temperature
+  (°C), Remaining Energy for Rider (Wh), Lifetime Delivered Energy (Wh) and
+  Charge (Ah), **Charging Mode** and **Charge Limit** (the battery's charging
+  setting: currently charge-time optimised, no limit; the Flow app has no
+  control for it yet), Active Issue (raw).
+- Notifications only for button presses; automatic reads show in the bike's
+  Status attributes (`mcsp_check`: reason, outcome, time).
+- A plug-in read is cancelled if the charger is unplugged during the 30 s
+  delay (the bike is about to be ridden).
+- A failing debug-capture write (e.g. full disk) now stops the capture instead
+  of interrupting the Bluetooth handling.
+
 ## 0.5.0 – connect like the Flow app
 
 What the first real bike showed: the LDI works (battery, odometer, speed,

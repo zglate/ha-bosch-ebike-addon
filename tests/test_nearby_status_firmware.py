@@ -174,3 +174,35 @@ def test_bike_status_for_the_flow_app_check_and_silent_mcsp():
                                             "sweep_total": 694, "sweep_done": 300,
                                             "values": 0}, None, "x", 0.0)
     assert sweeping == "Exploring (LDI + MCSP): sweeping datapoints, 43 %, 0 answered"
+
+
+def test_values_with_bytes_publish_as_hex_and_charging_settings_decode():
+    import json as _json
+    import datapoints
+    from ha_mqtt import to_json
+    assert _json.loads(to_json([b"\x08\x84", {"1": b"\xff"}])) == ["0884", {"1": "ff"}]
+    mode = next(e for e in datapoints.ENTITIES if e.key == "charging_mode")
+    limit = next(e for e in datapoints.ENTITIES if e.key == "charge_limit")
+    assert datapoints.entity_state(mode, {1: 0}) == "Charge-time optimised"
+    assert datapoints.entity_state(mode, {}) == "Charge-time optimised"     # proto3 default
+    assert datapoints.entity_state(mode, {1: 1, 2: 80}) == "Battery-lifetime optimised"
+    assert datapoints.entity_state(limit, {1: 1, 2: 80}) == 80
+    assert datapoints.entity_state(limit, {1: 0}) is None                   # no limit set
+
+
+
+def test_packed_numbers_empty_messages_and_bytes_in_states():
+    import datapoints
+    table = datapoints.load_table()
+    # reachableRange is uint[]: proto3 packs it into one length-delimited field.
+    assert datapoints.decode_value(table[0x1857], bytes.fromhex("0a03") + bytes([82, 47, 31])) \
+        == [82, 47, 31]
+    # An all-default ChargingSettings is zero bytes: charge-time optimised.
+    value = datapoints.decode_value(table[0x00E5], b"")
+    assert value == {}
+    mode = next(e for e in datapoints.ENTITIES if e.key == "charging_mode")
+    assert datapoints.entity_state(mode, value) == "Charge-time optimised"
+    # A non-struct empty payload is still "no value".
+    assert datapoints.decode_value(table[0x1857], b"") is None
+    raw = next(e for e in datapoints.ENTITIES if e.key == "reachable_range_raw")
+    assert datapoints.entity_state(raw, [b"\x52\x2f"]) == '["522f"]'

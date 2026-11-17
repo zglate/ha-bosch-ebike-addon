@@ -155,7 +155,9 @@ the **top bar of its charge indicator flashes blue**. Then pick it in \
 MCSP_CHECK = """\
 **Connect like the Flow app** finished for `{address}`: *{outcome}*.
 
-LDI (the live-data feed) reconnects by itself. The check {next}.
+LDI (the live-data feed) reconnects by itself. Automatic reads happen when \
+the charger is plugged in and when the battery is full; this button reads \
+any time.
 
 - *replies*: the bike talks MCSP when the add-on connects the way the app \
 does; its extra data (motor power, battery health ...) appears on the bike's \

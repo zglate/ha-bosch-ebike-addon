@@ -1,5 +1,10 @@
 # Design – Bosch eBike add-on 0.4
 
+> Superseded in parts by 0.5/0.6 (see `bosch_ebike_ldi/CHANGELOG.md`): MCSP
+> runs over a link the add-on opens ("Connect like the Flow app"), only on
+> charger plug-in, at full battery and on the button; the add-on never
+> connects by itself otherwise, and there is no hold-off or 6-hourly repeat.
+
 One release covering the whole journey, from install to daily use. Each
 step says what the user sees and what the add-on does.
 

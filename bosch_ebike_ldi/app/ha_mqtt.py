@@ -105,6 +105,17 @@ def binary_template(key: str, invert: bool = False) -> str:
     )
 
 
+def _json_default(value):
+    """Decoded datapoints can hold raw bytes (unknown fields): publish hex."""
+    if isinstance(value, (bytes, bytearray)):
+        return value.hex()
+    return str(value)
+
+
+def to_json(value) -> str:
+    return json.dumps(value, default=_json_default)
+
+
 def _slug(bike_id: str) -> str:
     """Convert a BLE address like AB:CD:EF:01:23:45 to ab_cd_ef_01_23_45."""
     return bike_id.replace(":", "_").lower()
@@ -537,6 +548,9 @@ class HaMqttPublisher:
         self._discovered.add(key)
         slug = _slug(bike_id)
         state_topic = f"{self._base}/{slug}/mcsp"
+        for old in ("remaining_energy_raw", "lifetime_delivered_wh_raw"):    # renamed in 0.6
+            self._client.publish(f"homeassistant/sensor/bosch_ebike_{slug}_mcsp_{old}/config",
+                                 "", retain=True)
         for e in ENTITIES:
             unique_id = f"bosch_ebike_{slug}_mcsp_{e.key}"
             payload: dict = {
@@ -556,7 +570,7 @@ class HaMqttPublisher:
                                  json.dumps(payload), retain=True)
 
     def publish_mcsp_state(self, bike_id: str, state: dict) -> None:
-        self._client.publish(f"{self._base}/{_slug(bike_id)}/mcsp", json.dumps(state),
+        self._client.publish(f"{self._base}/{_slug(bike_id)}/mcsp", to_json(state),
                              retain=True)
 
     def publish_mcsp_status(self, bike_id: str, bike_name: str, status: dict) -> None:
@@ -610,7 +624,7 @@ class HaMqttPublisher:
                 payload["unit_of_measurement"] = unit
             self._client.publish(f"homeassistant/sensor/{unique_id}/config",
                                  json.dumps(payload), retain=True)
-        payload = json.dumps(value) if structured else str(value)
+        payload = to_json(value) if structured else str(value)
         self._client.publish(topic, payload, retain=True)
 
     def publish_sweep_discovery(self, callback) -> None:

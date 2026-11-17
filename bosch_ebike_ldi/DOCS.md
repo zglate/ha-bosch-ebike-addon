@@ -107,9 +107,17 @@ connects the other way round: the phone connects *to* the bike. To try that:
 4. When done (at most 5 minutes) it disconnects and advertises again; the LDI
    reconnects by itself. A notification shows the result.
 
-If the bike answered, the app repeats this every `mcsp_reconnect_hours`
-(default 6) while the bike is connected and standing still. Otherwise it
-never drops the LDI by itself. No pairing is accepted during the check.
+No pairing is accepted during the check.
+
+**Automatic reads** (option `mcsp_connect`, on by default), at moments you
+aren't riding with the Flow app: about 30 s after the **charger is plugged
+in**, and again when the **battery reaches 100 %**. Both are seen through the
+LDI, so for now the bike needs to be switched on when you plug it in (whether
+its Bluetooth stays up while charging switched off is untested). Otherwise
+the app **never connects to the bike by itself**, so the Flow app always gets
+it. In the one test so far, the Flow app couldn't connect while the add-on was
+connected the phone way (likely one such connection at a time; not yet
+confirmed).
 
 ## Your first test session
 
@@ -157,9 +165,9 @@ then a sweep of the rest of the readable table.
   the table entirely;
 - answers the bike's requests with anything but "unsupported";
 - connects to a Bosch bike that isn't yours (it logs it and moves on);
-- holds on to your bike: a connection it opened is released a few minutes
-  after exploring finishes, and it doesn't reconnect for
-  `mcsp_reconnect_hours` (default 6), so the Flow app can always connect;
+- connects to your bike by itself, except for the two automatic reads
+  (charger plugged in, battery full) and the button; a read lasts at most 5
+  minutes, then the bike is released;
 - removes a pairing by itself (only the **Forget paired bikes** button does);
 - sends more than 4 requests at a time, at least 25 ms apart; it backs off if
   the bike says it's overloaded.
@@ -178,16 +186,22 @@ power), Speed, Cadence, Ambient Brightness, Light, In Motion, System Locked
 (the LDI flag, not eBike Lock), Light Reserve, Diagnostic Tool Connected
 (a dealer tool, not a fault), Charge Time to 80 % / 100 %.
 
-**MCSP** (appear once read): Motor Power, Motor Torque, Rider Torque, Motor
-Cadence, Assist Mode (by name), Battery Temperature, Battery State of Health,
-Charge Cycles (total / on bike / off bike), Battery Capacity (Ah), Battery
-Total Energy, System Usable Energy, Power-on Time, Power-on Time with Motor
-Support, Charging Active, software versions of drive unit / battery /
-controller / head unit, plus several "(raw)" sensors whose units aren't
-confirmed yet.
+**MCSP** (appear once read, kept between reads): Battery State of Health,
+Charge Cycles (total / on bike / off bike), Battery Temperature, Battery FET
+Temperature, Drive Unit Temperature, Battery Capacity (Ah), Battery Total
+Energy, System Usable Energy, Remaining Energy for Rider, Lifetime Delivered
+Energy (Wh) and Charge (Ah), Power-on Time, Power-on Time with Motor Support,
+Charging Active, **Charging Mode** and **Charge Limit** (the battery's own
+charging setting; the Flow app doesn't offer a way to change it yet), software
+versions of drive unit / battery / controller / head unit, plus several
+"(raw)" sensors whose meaning isn't confirmed yet. Motor Power, Motor Torque,
+Rider Torque, Motor Cadence and Assist Mode only change while riding, when the
+add-on leaves the bike to the Flow app, so they mostly show the last read.
 
 **Status:** a plain-language summary per bike (connected over LDI and/or
-MCSP, exploring with progress, released until when, not connected).
+MCSP, exploring with progress, reading like the Flow app, not connected); its
+attributes include the last automatic read (`mcsp_check`: reason, outcome,
+time).
 
 **Firmware:** one **update entity** per component (drive unit, battery,
 controller, display) with the version your bike reports and the latest
@@ -235,9 +249,9 @@ confirmed).
 | `battery_wh` | 800 | Nominal battery energy, for the energy estimate |
 | `bikes` | [] | Your bikes: `address`, optional `name` and `battery_wh` |
 | `mcsp` | true | Run the MCSP exploration when the bike exposes it |
-| `mcsp_connect` | true | Connect to your bike (listed or paired) when it advertises, to reach MCSP |
+| `mcsp_connect` | true | Automatic MCSP reads when the charger is plugged in and when the battery is full |
 | `mcsp_sweep` | true | Sweep every readable datapoint, once per firmware |
-| `mcsp_reconnect_hours` | 6 | After releasing the bike, wait this long before connecting again |
+| `mcsp_reconnect_hours` | 6 | Not used since 0.6 (kept so existing configurations stay valid) |
 | `gatt_listen` | true | Record every other notifying Bluetooth characteristic |
 | `raw_entities` | true | One hidden diagnostic entity per decoded datapoint |
 | `capture` | true | Write the debug capture to `/share/bosch_ebike` |
@@ -276,9 +290,8 @@ send service information to the Supervisor"*. This app picks it up within
 30 seconds by itself, no restart needed.
 
 **MCSP Status says "MCSP not exposed on this connection".** The link the
-bike opened for the LDI doesn't carry MCSP. With `mcsp_connect` on, the
-add-on connects to the bike's own advertisement instead, once the bike is
-added (see *Add your bike*).
+bike opened for the LDI doesn't carry MCSP. The automatic reads and the
+**Connect like the Flow app** button connect the way the app does instead.
 
 **"Bosch device ... isn't one of your bikes".** Add it with **Pair selected
 bike** if it is yours.
@@ -294,8 +307,9 @@ bike** if it is yours.
 **"Looks like a stale bond".** The bike connected and dropped repeatedly. If
 it won't reconnect, press **Forget paired bikes** and pair again.
 
-**The Flow app can't connect while the add-on runs.** Note it in your report.
-Set `mcsp_connect` to false to keep the add-on to the LDI only.
+**The Flow app can't connect.** Only during a read (at most 5 minutes after
+plugging in the charger, at 100 %, or after the button). Set `mcsp_connect` to
+false to stop the automatic reads.
 
 ## Credits
 

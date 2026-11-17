@@ -30,18 +30,17 @@ configuration:
     name: MCSP exploration
     description: Read the Flow app's channel (read-only) when the bike exposes it.
   mcsp_connect:
-    name: Connect to my bike
+    name: Automatic MCSP reads
     description: >-
-      Open a connection to your bike when it advertises, to reach MCSP. Only
-      bikes you added; released after exploring.
+      Read MCSP (battery health, cycles, motor hours ...) when the charger is
+      plugged in and when the battery is full. The app never connects to the
+      bike otherwise, so the Flow app keeps it.
   mcsp_sweep:
     name: Datapoint sweep
     description: Read every readable datapoint once per drive-unit firmware.
   mcsp_reconnect_hours:
-    name: Hours before reconnecting
-    description: >-
-      After releasing the bike (so the Flow app can connect), wait this long
-      before connecting again.
+    name: Hours before reconnecting (unused)
+    description: Not used since 0.6.
   gatt_listen:
     name: Listen to all characteristics
     description: Record every other notifying Bluetooth characteristic.
