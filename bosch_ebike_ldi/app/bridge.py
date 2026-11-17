@@ -1182,9 +1182,14 @@ class EbikeBridge:
         bike["mcsp_status"] = None
         if bike.get("explorer"):
             self._end_session(addr, "restarted")
+        silent_before = (not bike.get("central")
+                         and self._explorer_state.get(addr, {}).get("ldi_link_silent"))
         bike["explorer"] = BikeExplorer(
             self._bus, addr, device_path, self._table, self._capture, _BikeHooks(self, addr),
-            use_mcsp=self._use_mcsp, gatt_listen=self._gatt_listen)
+            use_mcsp=self._use_mcsp and not silent_before, gatt_listen=self._gatt_listen,
+            mcsp_off_reason=("MCSP disabled on the bike's live-data link (it doesn't answer "
+                             "there; full readings use their own connection)")
+            if silent_before else "MCSP disabled in options")
         try:
             bike["explorer"].start()
         except dbus.DBusException as exc:
@@ -1293,6 +1298,16 @@ class EbikeBridge:
             self._mqtt.publish_datapoint(addr, bike["name"], dp_id,
                                          dp.label if dp else f"unknown.0x{dp_id:04X}",
                                          dp.unit if dp else None, value)
+        if dp_id in (datapoints.REACHABLE_RANGE, datapoints.ASSIST_LONG_NAMES,
+                     datapoints.ASSIST_SHORT_NAMES):
+            if dp_id == datapoints.REACHABLE_RANGE:
+                bike["_ranges"] = value
+            ranges = datapoints.range_by_mode(bike.get("_ranges"), bike.get("assist_names"))
+            if ranges:
+                state = bike.setdefault("mcsp_state", {})
+                state["range_by_mode"] = ranges
+                self._mqtt.publish_range_discovery(addr, bike["name"], list(ranges))
+                self._mqtt.publish_mcsp_state(addr, state)
         entities = self._entities_by_id.get(dp_id)
         if not entities:
             return
@@ -1793,19 +1808,19 @@ class EbikeBridge:
         is always restored; no pairing meanwhile (the LDI bond's keys stay).
         """
         if self._window is not None:
-            log.info("Connect like the Flow app: already running")
+            log.info("Full reading: one is already running")
             return False
         if not self._use_mcsp:
-            log.warning("Connect like the Flow app: MCSP is switched off in the options")
+            log.warning("Full reading: MCSP is switched off in the options")
             return False
         known = sorted(self._known_bikes)
         target = addr or next((a for a in known if self._bikes.get(a, {}).get("char_path")),
                               known[0] if known else None)
         if target is None:
-            log.warning("Connect like the Flow app: no bike added yet")
+            log.warning("Full reading: no bike added yet")
             return False
         if self._is_moving(target):
-            log.warning("Connect like the Flow app: %s is moving; try when it stands still",
+            log.warning("Full reading: %s is moving; try when it stands still",
                         target)
             return False
         path = device_path or self._bikes.get(target, {}).get("device_path") \
@@ -1838,7 +1853,7 @@ class EbikeBridge:
                 self._start_scan(WINDOW_SEC)            # extends a running scan
             self._refresh_bike(target)
         except Exception as exc:                   # D-Bus gone, disk full ...
-            log.error("[%s] Connect like the Flow app couldn't start: %s", target, exc)
+            log.error("[%s] Full reading couldn't start: %s", target, exc)
             self._end_window(f"couldn't start: {exc}")
         return False
 
@@ -1904,9 +1919,13 @@ class EbikeBridge:
             self._end_window("connected, but the bike sent nothing on MCSP" if bike.get("central")
                              else "the bike reconnected for LDI before the add-on could connect")
             return
-        log.warning("[%s] The bike isn't answering MCSP on the link it opened for LDI. "
-                    "Press 'Connect like the Flow app' (bike on, standing still) to try "
-                    "the way the app connects", addr)
+        log.info("[%s] The bike doesn't answer full readings on its live-data link; "
+                 "they use their own connection (when charging, or Read full details). "
+                 "Not asking on this link again.", addr)
+        memory = self._explorer_state.setdefault(addr, {})
+        if not memory.get("ldi_link_silent"):
+            memory["ldi_link_silent"] = True
+            self._save_state()
         self._refresh_bike(addr)
 
     def _end_window(self, outcome: str) -> None:
@@ -1916,7 +1935,7 @@ class EbikeBridge:
         self._window = None
         addr = w["addr"]
         try:
-            log.info("[%s] Connect like the Flow app finished: %s", addr, outcome)
+            log.info("[%s] Full reading finished: %s", addr, outcome)
             now = datetime.now(timezone.utc).isoformat(timespec="seconds")
             state = self._explorer_state.setdefault(addr, {})
             state["mcsp_window"] = {"outcome": outcome, "at": now, "reason": w["reason"]}
@@ -1951,7 +1970,7 @@ class EbikeBridge:
             self._readvertise()                  # LDI can reconnect, whatever happened
         if not w["auto"]:
             supervisor.notify(f"mcsp_check_{addr.replace(':', '').lower()}",
-                              "Bosch eBike: MCSP check finished",
+                              "Bosch eBike: full reading finished",
                               supervisor.MCSP_CHECK.format(outcome=outcome, address=addr))
         self._refresh_bike(addr)
 

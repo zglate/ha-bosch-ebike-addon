@@ -789,3 +789,31 @@ def test_the_page_keeps_the_last_full_reading_after_a_restart(harness):
             return None
     after = wait_for(lambda: (b := bike()) and b.get("last_good") and b, "page after restart")
     assert after["mcsp"].get("charge_cycles") is not None and after["model"]
+
+
+def test_the_live_data_link_is_not_asked_again_once_it_stayed_silent(harness):
+    harness.control.EnableMcsp(BIKE, json.dumps({"values": VALUES,
+                                                 "answers_only_app_links": True}))
+    harness.start_bridge(open_pairing_on_start=False, mcsp_connect=False,
+                         env={"BOSCH_MCSP_TIMEOUT_MS": "200"})
+    harness.control.Connect(BIKE, True, True, dbus.ByteArray(SNAPSHOT))      # LDI link
+    wait_for(lambda: status(harness).get("state")
+             == "bike not answering MCSP on this connection", "silent once", timeout=20)
+    harness.control.Disconnect(BIKE)
+    time.sleep(1)
+    harness.control.Connect(BIKE, True, True, dbus.ByteArray(SNAPSHOT))      # again
+    wait_for(lambda: status(harness).get("state", "").startswith(
+        "MCSP disabled on the bike's live-data link"), "not asked again")
+    assert status(harness).get("requests_sent") in (None, 0)
+
+
+def test_range_per_mode_reaches_the_page_and_home_assistant(harness):
+    values = {**VALUES, "0x0089": "0801", "0x1857": "0a04" + bytes([80, 46, 31, 23]).hex()}
+    harness.control.EnableMcsp(BIKE, json.dumps({"values": values,
+                                                 "answers_only_app_links": True}))
+    harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": BIKE}], env=PEEK)
+    harness.control.Advertise(BIKE, ADVERT, True)
+    wait_for(lambda: (harness.mqtt.json(MCSP_TOPIC) or {}).get("range_by_mode")
+             == {"ECO": 80, "TOUR+": 46}, "range per mode", timeout=60)
+    config = harness.mqtt.json(f"homeassistant/sensor/bosch_ebike_{SLUG}_range_tour/config")
+    assert config["name"] == "Range TOUR+" and config["unit_of_measurement"] == "km"

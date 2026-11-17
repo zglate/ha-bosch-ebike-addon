@@ -448,6 +448,11 @@ function bikePage(b) {
       ["Charging mode", m.charging_mode ?? "—"],
       ["Charge limit", m.charge_limit != null ? m.charge_limit + "%" : (m.charging_mode ? "None set" : "—")],
     ])),
+    section("road", "Range", m.range_by_mode && Object.keys(m.range_by_mode).length
+      ? [rows(Object.entries(m.range_by_mode).map(([mode, k]) => [mode, fmt(k) + " km"])),
+         $("div", {class: "hint", style: "margin-top:12px"}, "The bike's own estimate per assist mode, " +
+           "for the charge at the last full reading.")]
+      : $("div", {class: "empty"}, "Shown after a full reading.")),
     section("motor", "Motor", details ? rows([
       ["Hours with motor help", fmt(m.motor_support_hours) && fmt(m.motor_support_hours) + " h"],
       ["Hours switched on", fmt(m.power_on_hours) && fmt(m.power_on_hours) + " h"],

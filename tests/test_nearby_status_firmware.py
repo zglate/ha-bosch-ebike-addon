@@ -206,3 +206,12 @@ def test_packed_numbers_empty_messages_and_bytes_in_states():
     assert datapoints.decode_value(table[0x1857], b"") is None
     raw = next(e for e in datapoints.ENTITIES if e.key == "reachable_range_raw")
     assert datapoints.entity_state(raw, [b"\x52\x2f"]) == '["522f"]'
+
+
+def test_range_per_assist_mode_uses_the_bikes_own_mode_names():
+    import datapoints
+    names = ["OFF", "ECO", "TOUR+", "eMTB", "TURBO"]
+    assert datapoints.range_by_mode([80, 46, 31, 23], names) == {
+        "ECO": 80, "TOUR+": 46, "eMTB": 31, "TURBO": 23}
+    assert datapoints.range_by_mode([80, 46], None) == {}
+    assert datapoints.range_by_mode(None, names) == {}

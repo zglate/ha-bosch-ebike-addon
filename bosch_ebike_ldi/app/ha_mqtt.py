@@ -8,6 +8,7 @@ value_template to extract its field.
 """
 from __future__ import annotations
 import json
+import re
 import logging
 from typing import NamedTuple
 
@@ -292,6 +293,27 @@ class HaMqttPublisher:
                     "icon": "mdi:bike-fast", "device": self._bridge_device}), retain=True)
         self._client.publish(topic, json.dumps({"state": state, "attributes": attributes},
                                                default=str), retain=True)
+
+    def publish_range_discovery(self, bike_id: str, bike_name: str, modes: list) -> None:
+        """One range sensor per assist mode (the bike's own mode names)."""
+        key = f"range:{bike_id}:{'|'.join(modes)}"
+        if key in self._discovered:
+            return
+        self._discovered.add(key)
+        slug = _slug(bike_id)
+        for mode in modes:
+            # Topic-safe ID: "TOUR+" would put an MQTT wildcard into the topic.
+            mode_id = re.sub(r"[^a-z0-9]+", "_", mode.lower()).strip("_") or "mode"
+            unique_id = f"bosch_ebike_{slug}_range_{mode_id}"
+            mode_js = json.dumps(mode)
+            self._client.publish(f"homeassistant/sensor/{unique_id}/config", json.dumps({
+                "name": f"Range {mode}", "unique_id": unique_id,
+                "state_topic": f"{self._base}/{slug}/mcsp",
+                "value_template": ("{% set r = value_json.get('range_by_mode') or {} %}"
+                                   "{{ r.get(" + mode_js + ", '') }}"),
+                "unit_of_measurement": "km", "device_class": "distance",
+                "state_class": "measurement", "icon": "mdi:map-marker-distance",
+                "device": self._bike_device(slug, bike_name, bike_id)}), retain=True)
 
     def remove_bike(self, bike_id: str, table: dict) -> None:
         """Remove a bike's entities (and device) from Home Assistant."""

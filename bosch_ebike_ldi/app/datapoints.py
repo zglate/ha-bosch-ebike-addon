@@ -247,6 +247,18 @@ ENTITIES = [
 
 
 CHARGING_MODES = {0: "Charge-time optimised", 1: "Battery-lifetime optimised"}
+REACHABLE_RANGE = 0x1857
+ASSIST_LONG_NAMES, ASSIST_SHORT_NAMES = 0x180D, 0x180C
+
+
+def range_by_mode(ranges, names) -> dict:
+    """reachableRange lists km per assist mode, without OFF (a real bike:
+    [80, 46, 31, 23] for ECO, TOUR+, eMTB, TURBO). Paired with the bike's own
+    mode names; {} until both are known."""
+    if not isinstance(ranges, list) or not isinstance(names, list):
+        return {}
+    modes = [n for n in names if isinstance(n, str) and n and n.upper() != "OFF"]
+    return {mode: km for mode, km in zip(modes, ranges) if isinstance(km, (int, float))}
 
 
 def charging_setting(key: str, value: Any) -> Any:

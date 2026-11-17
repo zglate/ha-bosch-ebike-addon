@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.3
+
+- **Range per assist mode**, the bike's own estimate (a real bike: ECO 80 km,
+  TOUR+ 46 km, eMTB 31 km, TURBO 23 km): a Range card on the page and one
+  sensor per mode in Home Assistant.
+- The add-on stops asking for full readings on the bike's own live-data link
+  once it has stayed silent there (it remembers this per bike); no more 20
+  unanswered requests and a warning on every live-data connection.
+- Log and notification wording follows the page: "full reading", "Read full
+  details".
+
 ## 0.7.2
 
 - **Redesigned page.** One bike opens straight onto it:

@@ -140,10 +140,12 @@ class BikeExplorer:
     """Device dump, GATT inventory and optional MCSP session for one bike."""
 
     def __init__(self, bus, address: str, device_path: str, table: dict, capture,
-                 hooks: Hooks, use_mcsp: bool = True, gatt_listen: bool = True) -> None:
+                 hooks: Hooks, use_mcsp: bool = True, gatt_listen: bool = True,
+                 mcsp_off_reason: str = "MCSP disabled in options") -> None:
         self._bus, self.address, self._path = bus, address, device_path
         self._table, self._capture, self._hooks = table, capture, hooks
         self._use_mcsp, self._gatt_listen = use_mcsp, gatt_listen
+        self._mcsp_off_reason = mcsp_off_reason
         self._matches: list = []
         self.mcsp: McspSession | None = None
 
@@ -170,7 +172,7 @@ class BikeExplorer:
         if not (rx and tx):
             self._status_only("MCSP not exposed on this connection")
         elif not self._use_mcsp:
-            self._status_only("MCSP disabled in options")
+            self._status_only(self._mcsp_off_reason)
         else:
             self.mcsp = McspSession(self._bus, self.address, rx, tx, self._table,
                                     self._capture, self._hooks)

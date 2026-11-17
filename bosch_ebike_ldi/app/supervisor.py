@@ -161,7 +161,7 @@ bike** again on {bridge}.
 """
 
 MCSP_CHECK = """\
-**Connect like the Flow app** finished for `{address}`: *{outcome}*.
+**Read full details** finished for `{address}`: *{outcome}*.
 
 LDI (the live-data feed) reconnects by itself. Automatic full readings happen \
 when the bike advertises while charging; **Read now** reads any time.
