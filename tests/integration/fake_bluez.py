@@ -121,7 +121,10 @@ class Adapter(BluezObject):
                 if char:
                     raw = dbus.Interface(BUS.get_object(sender, obj_path),
                                          "org.bluez.GattCharacteristic1").ReadValue({})
-                    values[str(char["UUID"])[4:8]] = bytes(raw).decode()
+                    try:
+                        values[str(char["UUID"])[4:8]] = bytes(raw).decode()
+                    except UnicodeDecodeError:
+                        values[str(char["UUID"])[4:8]] = bytes(raw).hex()
             STATE["gatt_app"] = values
             reply()
         app.GetManagedObjects(reply_handler=got, error_handler=error)

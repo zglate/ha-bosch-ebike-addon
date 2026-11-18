@@ -57,11 +57,11 @@ configuration:
     name: Accessory manufacturer
     description: What the bike and the Flow app show as this accessory's maker.
   accessory_model:
-    name: Accessory model / product code
-    description: Shown by the Flow app for this accessory.
+    name: Accessory part number
+    description: Shown as "Part number" for this accessory in the Flow app.
   accessory_hardware:
-    name: Accessory hardware / part number
-    description: Shown by the Flow app for this accessory.
+    name: Accessory hardware revision
+    description: Served to the bike; the Flow app doesn't show it.
   accessory_serial:
     name: Accessory serial number
     description: Leave empty for "HA-" plus the end of the Pi's Bluetooth address.

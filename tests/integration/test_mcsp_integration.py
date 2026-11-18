@@ -861,4 +861,5 @@ def test_the_bike_can_read_what_this_accessory_is(harness):
     assert info["2a24"] == "BHA9000"                   # model, from the option
     assert info["2a27"] == "HA-4200-PI"                # hardware (default)
     assert info["2a25"] == "HA-334455"                 # serial: end of the adapter address
-    assert info["2a26"] == info["2a28"]                # firmware = software = add-on version
+    assert info["2a28"] == info["2a26"] + ".0"         # experiment: software = firmware + ".0"
+    assert info["2a50"].encode().hex() == "010a0b0c0d0e0f"   # PnP ID marker (raw bytes)

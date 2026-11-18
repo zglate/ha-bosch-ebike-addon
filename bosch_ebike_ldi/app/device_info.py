@@ -30,7 +30,7 @@ DEFAULTS = {"manufacturer": "Home Assistant", "model": "BHA2026", "hardware": "H
 
 
 def values(version: str | None, adapter_address: str | None,
-           identity: dict | None = None) -> list[tuple[str, str, str]]:
+           identity: dict | None = None) -> list[tuple[str, str, str | bytes]]:
     """(UUID, label, value) for each Device Information characteristic.
 
     `identity` (from the options) may set manufacturer, model, hardware and
@@ -40,20 +40,30 @@ def values(version: str | None, adapter_address: str | None,
     ident = {**DEFAULTS, **{k: v for k, v in (identity or {}).items() if v}}
     tail = (adapter_address or "").replace(":", "")[-6:].upper() or "000000"
     v = version or "dev"
+    # Seen in the Flow app (2026-11-18): model -> "Part number", serial ->
+    # "Serial number", firmware or software -> "Software version"; manufacturer
+    # and hardware aren't shown; "Product code" came from none of these.
+    # EXPERIMENT (0.7.6): the remaining standard fields carry markers so the
+    # one that feeds "Product code" shows itself, and firmware / software
+    # differ by ".0" to tell which feeds "Software version".
     return [
         ("00002a29-0000-1000-8000-00805f9b34fb", "manufacturer", ident["manufacturer"][:40]),
         ("00002a24-0000-1000-8000-00805f9b34fb", "model", ident["model"][:40]),
         ("00002a25-0000-1000-8000-00805f9b34fb", "serial", (ident.get("serial") or f"HA-{tail}")[:40]),
         ("00002a27-0000-1000-8000-00805f9b34fb", "hardware", ident["hardware"][:40]),
         ("00002a26-0000-1000-8000-00805f9b34fb", "firmware", v),
-        ("00002a28-0000-1000-8000-00805f9b34fb", "software", v),
+        ("00002a28-0000-1000-8000-00805f9b34fb", "software", f"{v}.0"),
+        ("00002a23-0000-1000-8000-00805f9b34fb", "system id", "SYSID-B1"),
+        ("00002a2a-0000-1000-8000-00805f9b34fb", "ieee", "IEEE-C1"),
+        ("00002a50-0000-1000-8000-00805f9b34fb", "pnp id", bytes.fromhex("010a0b0c0d0e0f")),
     ]
 
 
 class _Characteristic(dbus.service.Object):
-    def __init__(self, bus, path: str, service_path: str, uuid: str, value: str) -> None:
+    def __init__(self, bus, path: str, service_path: str, uuid: str, value) -> None:
         super().__init__(bus, path)
-        self.path, self._value = path, value.encode()
+        self.path = path
+        self._value = value if isinstance(value, bytes) else value.encode()
         self.props = {CHAR_IFACE: {"Service": dbus.ObjectPath(service_path),
                                    "UUID": uuid, "Flags": dbus.Array(["read"], signature="s")}}
 
@@ -120,7 +130,8 @@ def register(bus, adapter_path: str, version: str | None, adapter_address: str |
     dbus.Interface(bus.get_object("org.bluez", adapter_path), GATT_MANAGER).RegisterApplication(
         dbus.ObjectPath(APP_PATH), {},
         reply_handler=lambda: log.info("Device information served to the bike: %s",
-                                       ", ".join(f"{label} {value}" for _u, label, value
+                                       ", ".join(f"{label} {value.hex() if isinstance(value, bytes) else value}"
+                                                 for _u, label, value
                                                  in values(version, adapter_address, identity))),
         error_handler=lambda e: log.warning("Device information not served: %s", e))
     return app

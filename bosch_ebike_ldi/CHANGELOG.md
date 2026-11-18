@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.6 – find the Flow app's "Product code"
+
+- The Flow app showed: model -> Part number, serial -> Serial number,
+  version -> Software version; "Product code" stayed empty. This version also
+  serves the other standard fields with markers (System ID `SYSID-B1`, IEEE
+  data `IEEE-C1`, PnP ID vendor `0A0B` / product `0C0D` / version `0E0F`),
+  and firmware `x.y.z` vs software `x.y.z.0`, so the Flow app shows which one
+  it uses. Temporary: the next version keeps only what's shown.
+- The `accessory_model` option is labelled "Part number", as in the Flow app.
+
 ## 0.7.5
 
 - **The add-on tells the bike what it is**: a standard Bluetooth Device
