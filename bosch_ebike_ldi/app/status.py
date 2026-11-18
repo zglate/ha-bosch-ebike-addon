@@ -61,7 +61,7 @@ def setup_notification(strangers: list[tuple[str, dict]], bridge: str = BRIDGE) 
 Bosch bikes heard nearby:
 {heard}
 
-For the official live-data feed (LDI), also press **Start pairing** and add *HA eBike Bridge* in the Flow app (bike → ⚙ → Components → Add new device).
+For the official live-data feed (LDI), also press **Start pairing** and add this app (its name is the `bridge_name` option) in the Flow app (bike → ⚙ → Components → Add new device).
 """
 
 

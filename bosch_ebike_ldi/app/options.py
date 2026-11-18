@@ -14,7 +14,7 @@ import json
 from typing import Mapping
 
 DEFAULTS = {
-    "bridge_name": "HA eBike Bridge",
+    "bridge_name": "Home Assistant Reader",
     "adapter": "hci0",
     "private_advertising": True,
     "bikes": [],
@@ -32,6 +32,12 @@ DEFAULTS = {
     # Firmware notifications: compare with Bosch's published versions daily.
     "firmware_check": True,
     "notify_full": True,                # notification when the battery is full
+    # What the add-on tells the bike about itself (the Flow app's component
+    # list). Empty serial = "HA-" + the end of the Pi's Bluetooth address.
+    "accessory_manufacturer": "Home Assistant",
+    "accessory_model": "BHA2026",
+    "accessory_hardware": "HA-4200-PI",
+    "accessory_serial": "",
     "firmware_page": "https://www.bosch-ebike.com/ca/service/software-update",
 }
 EXPLORER_OPTIONS = ("mcsp", "mcsp_connect", "mcsp_sweep", "gatt_listen",
@@ -97,6 +103,10 @@ def build_config(options: Mapping, env: Mapping) -> dict:
         **{name: bool(opts[name]) for name in EXPLORER_OPTIONS},
         "mcsp_reconnect_hours": max(0.0, float(opts["mcsp_reconnect_hours"])),
         "firmware_page": str(opts["firmware_page"]),
+        "accessory": {"manufacturer": str(opts["accessory_manufacturer"] or "").strip(),
+                      "model": str(opts["accessory_model"] or "").strip(),
+                      "hardware": str(opts["accessory_hardware"] or "").strip(),
+                      "serial": str(opts["accessory_serial"] or "").strip()},
     }
 
 

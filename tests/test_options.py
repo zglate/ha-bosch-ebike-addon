@@ -12,7 +12,7 @@ MOSQUITTO = {"MQTT_HOST": "core-mosquitto", "MQTT_PORT": "1883",
 def test_defaults_with_mosquitto_service():
     config = build_config({}, MOSQUITTO)
     assert config == {
-        "bridge_name": "HA eBike Bridge",
+        "bridge_name": "Home Assistant Reader",
         "adapter": "hci0",
         "private_advertising": True,
         "log_level": "info",
@@ -25,6 +25,8 @@ def test_defaults_with_mosquitto_service():
         "gatt_listen": True, "raw_entities": False, "capture": True,
         "open_pairing_on_start": False, "mcsp_reconnect_hours": 6.0,
         "firmware_check": True, "notify_full": True,
+        "accessory": {"manufacturer": "Home Assistant", "model": "BHA2026",
+                      "hardware": "HA-4200-PI", "serial": ""},
         "firmware_page": "https://www.bosch-ebike.com/ca/service/software-update",
     }
 

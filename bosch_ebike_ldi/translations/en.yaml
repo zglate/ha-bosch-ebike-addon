@@ -1,7 +1,7 @@
 configuration:
   bridge_name:
-    name: Bridge name
-    description: Name the bike and the Flow app show for this bridge.
+    name: Accessory name
+    description: The name the bike and the Flow app show for this app.
   adapter:
     name: Bluetooth adapter
     description: Adapter to use, e.g. hci0, or "auto" for the first one found.
@@ -53,6 +53,18 @@ configuration:
   open_pairing_on_start:
     name: Open pairing window on start
     description: Open the 5-minute pairing window every time the app starts.
+  accessory_manufacturer:
+    name: Accessory manufacturer
+    description: What the bike and the Flow app show as this accessory's maker.
+  accessory_model:
+    name: Accessory model / product code
+    description: Shown by the Flow app for this accessory.
+  accessory_hardware:
+    name: Accessory hardware / part number
+    description: Shown by the Flow app for this accessory.
+  accessory_serial:
+    name: Accessory serial number
+    description: Leave empty for "HA-" plus the end of the Pi's Bluetooth address.
   notify_full:
     name: Notify when fully charged
     description: >-

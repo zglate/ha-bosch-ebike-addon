@@ -214,7 +214,8 @@ confirmed).
 
 | Option | Default | Meaning |
 |---|---|---|
-| `bridge_name` | HA eBike Bridge | Name shown to the Flow app |
+| `bridge_name` | Home Assistant Reader | Name the bike and the Flow app show for this app |
+| `accessory_manufacturer`, `accessory_model`, `accessory_hardware`, `accessory_serial` | Home Assistant, BHA2026, HA-4200-PI, (from the Pi's address) | What the Flow app shows for this accessory; its software version is always the add-on's |
 | `adapter` | hci0 | Bluetooth adapter (`auto` = first found) |
 | `private_advertising` | true | Only visible to Flow apps during the pairing window |
 | `log_level` | info | `debug` adds every raw packet and every refused datapoint |
@@ -271,7 +272,8 @@ bike** if it is yours.
 **Pairing fails, or the Flow app never finds the bridge.**
 1. Retry **Pair selected bike** with the bike on, or press **Start pairing**
    and retry within 5 minutes.
-2. Remove any old "HA eBike Bridge" entry under Components in the Flow app.
+2. Remove any old entry for this app ("HA eBike Bridge", "Home Assistant Reader" or
+   "Accessory") under Components in the Flow app.
 3. To check whether Home Assistant's Bluetooth integration is in the way:
    Settings → Devices & services → Bluetooth → the adapter → ⋮ → Disable,
    restart this add-on, pair again, then re-enable it.

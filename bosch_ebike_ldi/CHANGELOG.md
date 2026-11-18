@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.7.5
+
+- **The add-on tells the bike what it is**: a standard Bluetooth Device
+  Information record (manufacturer Home Assistant, model BHA2026, hardware
+  HA-4200-PI, serial HA-<last 6 of the Pi's Bluetooth address>, firmware and
+  software = the add-on version), so the Flow app no longer has to list it as
+  a blank "Accessory". The Flow app may only read this when the accessory is
+  added, so remove and re-add it there to see it.
+- New installs advertise as **Home Assistant Reader** (option `bridge_name`).
+  The accessory's manufacturer, model, hardware and serial are options too
+  (`accessory_*`); the software version always follows the add-on.
+- Calmer log for a bike switched on to ride: "Bike heard: checking whether
+  it's charging" / "Not charging: left the bike to the Flow app".
+
 ## 0.7.4
 
 - **Messages from the bike**: the bike's current messages (Bosch fault codes)

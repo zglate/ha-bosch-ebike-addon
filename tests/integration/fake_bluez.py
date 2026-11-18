@@ -86,7 +86,7 @@ class Adapter(BluezObject):
         super().__init__(bus, ADAPTER, {
             "org.bluez.Adapter1": {"Address": "00:11:22:33:44:55", "Powered": False,
                                    "Discoverable": False, "Pairable": False},
-            "org.bluez.LEAdvertisingManager1": {},
+            "org.bluez.LEAdvertisingManager1": {}, "org.bluez.GattManager1": {},
         })
 
     @dbus.service.method("org.bluez.LEAdvertisingManager1",
@@ -107,6 +107,24 @@ class Adapter(BluezObject):
     @dbus.service.method("org.bluez.LEAdvertisingManager1", in_signature="o")
     def UnregisterAdvertisement(self, path):
         STATE["unregistrations"] += 1
+
+    @dbus.service.method("org.bluez.GattManager1", in_signature="oa{sv}", sender_keyword="sender",
+                         async_callbacks=("reply", "error"))
+    def RegisterApplication(self, path, options, reply, error, sender=None):
+        """Like bluetoothd: read the application's objects, then each value."""
+        app = dbus.Interface(BUS.get_object(sender, path), "org.freedesktop.DBus.ObjectManager")
+
+        def got(objects):
+            values = {}
+            for obj_path, ifaces in objects.items():
+                char = ifaces.get("org.bluez.GattCharacteristic1")
+                if char:
+                    raw = dbus.Interface(BUS.get_object(sender, obj_path),
+                                         "org.bluez.GattCharacteristic1").ReadValue({})
+                    values[str(char["UUID"])[4:8]] = bytes(raw).decode()
+            STATE["gatt_app"] = values
+            reply()
+        app.GetManagedObjects(reply_handler=got, error_handler=error)
 
     @dbus.service.method("org.bluez.Adapter1", in_signature="a{sv}")
     def SetDiscoveryFilter(self, properties):
@@ -546,7 +564,7 @@ STATE = {"advertisements": [], "unregistrations": 0, "removed_devices": [],
          "notify_started": [], "property_sets": [], "agent_errors": [],
          "default_agent": None, "agent_capability": None,
          "agent_registrations": 0, "gatt_writes": [], "connect_calls": [],
-         "pair_calls": [], "pair_bondable": [], "fail_pair": [], "proximity_filter": False, "links": [], "advert_times": [],"disconnect_calls": [], "discovery": []}
+         "pair_calls": [], "pair_bondable": [], "fail_pair": [], "proximity_filter": False, "links": [], "advert_times": [], "gatt_app": {},"disconnect_calls": [], "discovery": []}
 MCSP_LOG = {"commands": [], "messages": []}
 
 if __name__ == "__main__":

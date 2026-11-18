@@ -486,7 +486,7 @@ function bikePage(b) {
       $("ol", {class: "small", style: "margin:0 0 14px;padding-left:20px"},
         $("li", {}, "Press Start pairing below (it stays open for 5 minutes)."),
         $("li", {}, "In the Flow app: your bike → Settings → Components → Add new device."),
-        $("li", {}, "Pick “HA eBike Bridge”.")),
+        $("li", {}, "Pick “" + (S.bridge_name || "Home Assistant Reader") + "”.")),
       $("button", {disabled: busy || S.pairing_open, onclick: () => act("start_pairing")},
         S.pairing_open ? "Pairing open" : "Start pairing")));
 

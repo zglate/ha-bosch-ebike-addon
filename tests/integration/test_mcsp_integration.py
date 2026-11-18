@@ -851,3 +851,14 @@ def test_one_fully_charged_notification_per_charge(harness):
         assert len(notes(sup, f"bosch_ebike_full_{SLUG.replace('_', '')}")) == 1
     finally:
         sup.server.shutdown()
+
+
+def test_the_bike_can_read_what_this_accessory_is(harness):
+    harness.start_bridge(open_pairing_on_start=False, accessory_model="BHA9000",
+                         accessory_serial="")
+    info = wait_for(lambda: harness.state()["gatt_app"], "device information served")
+    assert info["2a29"] == "Home Assistant"            # manufacturer (default)
+    assert info["2a24"] == "BHA9000"                   # model, from the option
+    assert info["2a27"] == "HA-4200-PI"                # hardware (default)
+    assert info["2a25"] == "HA-334455"                 # serial: end of the adapter address
+    assert info["2a26"] == info["2a28"]                # firmware = software = add-on version

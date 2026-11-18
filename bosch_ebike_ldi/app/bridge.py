@@ -49,6 +49,7 @@ import threading
 
 import ble_policy
 import datapoints
+import device_info
 import faults
 import firmware
 import mcsp
@@ -585,7 +586,7 @@ class EbikeBridge:
         return self._window_open()
 
     def _register_advertisement(self, adapter_path: str) -> LDIAdvertisement:
-        local_name = self._cfg.get("bridge_name", "HA eBike Bridge")
+        local_name = self._cfg.get("bridge_name", "Home Assistant Reader")
         pairing = self._pairing_open()
         adv = LDIAdvertisement(self._bus, local_name, pairing=pairing)
         mgr = dbus.Interface(
@@ -1673,6 +1674,7 @@ class EbikeBridge:
                 "waiting_for": next(iter(self._armed), None),
                 "adding": sorted(self._consented - self._known_bikes),
                 "reads": bool(self._mcsp_connect and self._use_mcsp),
+                "bridge_name": self._cfg.get("bridge_name", "Home Assistant Reader"),
             }
         except Exception as exc:                # the page must never break the bridge
             log.debug("Page state: %s", exc)
@@ -1774,6 +1776,20 @@ class EbikeBridge:
                 return str(path)
         return None
 
+    def _serve_device_info(self) -> None:
+        """What the bike and the Flow app can read about this add-on."""
+        try:
+            address = str(dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, self._adapter_path),
+                                         PROPS_IFACE).Get(ADAPTER_IFACE, "Address"))
+        except dbus.DBusException:
+            address = None
+        try:
+            self._device_info_app = device_info.register(
+                self._bus, self._adapter_path, self._cfg.get("version"), address,
+                getattr(self, "_device_info_app", None), self._cfg.get("accessory") or {})
+        except dbus.DBusException as exc:
+            log.warning("Device information not served: %s", exc)
+
     def _opened_by_us(self, device_path: str) -> bool:
         called = self._connect_called.get(device_path)
         connected = self._connected_at.get(device_path)
@@ -1867,9 +1883,11 @@ class EbikeBridge:
         GLib.timeout_add_seconds(WINDOW_SEC, self._window_deadline, window)
         GLib.timeout_add_seconds(2, self._window_watch, window)
         try:
-            log.info("[%s] MCSP read (%s): pausing LDI (advertising off) and connecting "
-                     "to the bike on its next advertisement (up to %d s)",
-                     target, reason, WINDOW_SEC)
+            if reason == "peek":
+                log.info("[%s] Bike heard: checking whether it's charging", target)
+            else:
+                log.info("[%s] Full reading (%s): pausing live data and connecting to the "
+                         "bike on its next advertisement (up to %d s)", target, reason, WINDOW_SEC)
             self._capture.event("mcsp_window_start", bike=target, auto=auto, reason=reason)
             bike = self._bikes.get(target, {})
             bike["mcsp_status"] = None             # judge only this window's session
@@ -1969,7 +1987,10 @@ class EbikeBridge:
         self._window = None
         addr = w["addr"]
         try:
-            log.info("[%s] Full reading finished: %s", addr, outcome)
+            if outcome.startswith(("not charging", "no charger answer")):
+                log.info("[%s] Not charging: left the bike to the Flow app", addr)
+            else:
+                log.info("[%s] Full reading finished: %s", addr, outcome)
             now = datetime.now(timezone.utc).isoformat(timespec="seconds")
             state = self._explorer_state.setdefault(addr, {})
             state["mcsp_window"] = {"outcome": outcome, "at": now, "reason": w["reason"]}
@@ -2220,6 +2241,7 @@ class EbikeBridge:
         log.warning("bluetoothd (re)started — re-registering agent and advert")
         try:
             self._register_agent()
+            self._serve_device_info()
             if self._window_open():
                 self._set_pairable(True)
             self._readvertise()
@@ -2264,6 +2286,7 @@ class EbikeBridge:
         self._adapter_path = adapter_path
         self._setup_adapter(adapter_path)
         self._register_agent()
+        self._serve_device_info()
         self._write_run_header()
 
         # Pairing is opened with the "Start pairing" button. Opening it on
@@ -2345,7 +2368,7 @@ class EbikeBridge:
 
         log.info(
             "Bridge running – advertising as '%s', waiting for eBike connections",
-            self._cfg.get("bridge_name", "HA eBike Bridge"),
+            self._cfg.get("bridge_name", "Home Assistant Reader"),
         )
         self._loop.run()
 

@@ -1,5 +1,5 @@
 name: Bosch eBike
-version: "0.7.4"
+version: "0.7.5"
 slug: bosch_ebike_ldi
 description: >-
   VERY EARLY TEST BUILD, don't use yet. Live data and diagnostics from a
@@ -25,7 +25,7 @@ map:
   - type: share
     read_only: false
 options:
-  bridge_name: HA eBike Bridge
+  bridge_name: Home Assistant Reader
   adapter: hci0
   private_advertising: true
   log_level: info
@@ -41,6 +41,10 @@ options:
   mcsp_reconnect_hours: 6
   firmware_check: true
   notify_full: true
+  accessory_manufacturer: Home Assistant
+  accessory_model: BHA2026
+  accessory_hardware: HA-4200-PI
+  accessory_serial: ""
   firmware_page: https://www.bosch-ebike.com/ca/service/software-update
 schema:
   bridge_name: str
@@ -62,6 +66,10 @@ schema:
   mcsp_reconnect_hours: float(0,168)
   firmware_check: bool
   notify_full: bool
+  accessory_manufacturer: str
+  accessory_model: str
+  accessory_hardware: str
+  accessory_serial: str?
   firmware_page: url
   mqtt_host: str?
   mqtt_port: port?
