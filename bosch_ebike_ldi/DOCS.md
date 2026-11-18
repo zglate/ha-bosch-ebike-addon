@@ -215,7 +215,13 @@ confirmed).
 | Option | Default | Meaning |
 |---|---|---|
 | `bridge_name` | Home Assistant Reader | Name the bike and the Flow app show for this app |
-| `accessory_manufacturer`, `accessory_model`, `accessory_hardware`, `accessory_serial` | Home Assistant, BHA2026, HA-4200-PI, (from the Pi's address) | What the Flow app shows for this accessory; its software version is always the add-on's |
+| `accessory_model` | BHA2026 | Shown as **Part number** for this accessory in the Flow app |
+| `accessory_serial` | (empty: HA- + end of the Pi's Bluetooth address) | Shown as **Serial number** |
+| `accessory_manufacturer`, `accessory_hardware` | Home Assistant, HA-4200-PI | Served to the bike; the Flow app doesn't show them |
+
+In the Flow app the accessory's **Software version** is always the add-on's
+version, and its name is the Pi's own Bluetooth name ("homeassistant"); the
+**Product code** stays empty for accessories.
 | `adapter` | hci0 | Bluetooth adapter (`auto` = first found) |
 | `private_advertising` | true | Only visible to Flow apps during the pairing window |
 | `log_level` | info | `debug` adds every raw packet and every refused datapoint |

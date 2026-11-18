@@ -40,22 +40,21 @@ def values(version: str | None, adapter_address: str | None,
     ident = {**DEFAULTS, **{k: v for k, v in (identity or {}).items() if v}}
     tail = (adapter_address or "").replace(":", "")[-6:].upper() or "000000"
     v = version or "dev"
-    # Seen in the Flow app (2026-11-18): model -> "Part number", serial ->
-    # "Serial number", firmware or software -> "Software version"; manufacturer
-    # and hardware aren't shown; "Product code" came from none of these.
-    # EXPERIMENT (0.7.6): the remaining standard fields carry markers so the
-    # one that feeds "Product code" shows itself, and firmware / software
-    # differ by ".0" to tell which feeds "Software version".
+    # What the Flow app shows for this accessory (tested 2026-11-18, app 1.39):
+    #   Model Number (2A24)      -> "Part number"
+    #   Serial Number (2A25)     -> "Serial number"
+    #   Software Revision (2A28) -> "Software version"
+    #   name                     -> the Pi's own Bluetooth name (not served here)
+    # Manufacturer and hardware/firmware revisions aren't shown. "Product
+    # code" stays empty for accessories: System ID, IEEE data and PnP ID were
+    # all tried with markers and none appeared.
     return [
         ("00002a29-0000-1000-8000-00805f9b34fb", "manufacturer", ident["manufacturer"][:40]),
         ("00002a24-0000-1000-8000-00805f9b34fb", "model", ident["model"][:40]),
         ("00002a25-0000-1000-8000-00805f9b34fb", "serial", (ident.get("serial") or f"HA-{tail}")[:40]),
         ("00002a27-0000-1000-8000-00805f9b34fb", "hardware", ident["hardware"][:40]),
         ("00002a26-0000-1000-8000-00805f9b34fb", "firmware", v),
-        ("00002a28-0000-1000-8000-00805f9b34fb", "software", f"{v}.0"),
-        ("00002a23-0000-1000-8000-00805f9b34fb", "system id", "SYSID-B1"),
-        ("00002a2a-0000-1000-8000-00805f9b34fb", "ieee", "IEEE-C1"),
-        ("00002a50-0000-1000-8000-00805f9b34fb", "pnp id", bytes.fromhex("010a0b0c0d0e0f")),
+        ("00002a28-0000-1000-8000-00805f9b34fb", "software", v),
     ]
 
 

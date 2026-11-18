@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.7
+
+- Product-code experiment done: the Flow app shows the accessory's model as
+  **Part number**, its serial as **Serial number** and its software revision
+  as **Software version**; no standard field fills **Product code** (System
+  ID, IEEE data and PnP ID were tried). The markers are gone; software and
+  firmware are the add-on version again.
+
 ## 0.7.6 – find the Flow app's "Product code"
 
 - The Flow app showed: model -> Part number, serial -> Serial number,
