@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.4
+
+- **Messages from the bike**: the bike's current messages (Bosch fault codes)
+  decoded with Bosch's own fault table (1,113 codes: severity, component,
+  title, what to do), on the page and as a "Bike Messages" sensor. A real
+  bike reports 566004, the drive unit's "Don't let yourself be distracted
+  when driving" reminder.
+- **Energy left** on the page: the battery's own figure (Wh).
+- **"Fully charged" notification**, once per charge, from the live data or a
+  full reading (option `notify_full`, on by default). Cleared when the charger
+  is unplugged.
+- The charger row says **Plugged in · full** or **· charging**.
+- New installs don't create the hidden per-datapoint debug entities
+  (`raw_entities` off by default; existing installs keep their setting).
+- Not possible: remaining charge time (the bike refuses to give it out).
+
 ## 0.7.3
 
 - **Range per assist mode**, the bike's own estimate (a real bike: ECO 80 km,

@@ -225,6 +225,7 @@ svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stro
 .chip.ok{background:var(--soft);color:var(--muted)}
 .chip.new{background:var(--warn-soft);color:var(--warn)}
 .empty{color:var(--muted);font-size:14px}
+.msg{padding:12px 0;border-top:1px solid var(--line)}.msg:first-of-type{border-top:none;padding-top:2px}
 
 /* overview */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:16px}
@@ -435,16 +436,29 @@ function bikePage(b) {
         f.newer ? $("span", {class: "chip new"}, f.latest + " available")
           : f.latest ? $("span", {class: "chip ok"}, "latest") : null)]))
     : $("div", {class: "empty"}, "Shown after a full reading.");
+  const msgs = m.messages || [];
+  const messages = msgs.length ? $("div", {class: "card pad sec", style: "margin-top:16px"},
+    $("h3", {}, icon("info"), "Messages from the bike"),
+    msgs.map(f => $("div", {class: "msg"},
+      $("div", {}, $("span", {class: "chip " + (f.severity === "Info" ? "ok" : "new"),
+        style: "margin-left:0;margin-right:8px"}, f.severity || "Message"),
+        $("span", {class: "muted small"}, f.component)),
+      $("div", {style: "margin-top:6px;font-weight:550"}, f.title),
+      f.description ? $("div", {class: "small muted", style: "margin-top:2px"}, f.description) : null,
+      f.measures ? $("div", {class: "small", style: "margin-top:4px"}, f.measures) : null,
+      $("div", {class: "hint"}, "Code " + f.code)))) : null;
   const cols = $("div", {class: "cols"},
     section("battery", "Battery", details || p != null ? rows([
       ["Charge", p != null ? Math.round(p) + "%" : null],
-      ["Usable energy", fmt(m.system_usable_energy) && fmt(m.system_usable_energy) + " Wh"],
+      ["Energy left", fmt(m.remaining_energy) && fmt(m.remaining_energy) + " Wh"],
+      ["Usable energy when full", fmt(m.system_usable_energy) && fmt(m.system_usable_energy) + " Wh"],
       ["Capacity", fmt(m.battery_capacity, 1) && fmt(m.battery_capacity, 1) + " Ah"],
       ["Temperature", fmt(m.battery_temperature, 1) && fmt(m.battery_temperature, 1) + " °C"],
       ["Energy delivered so far", fmt(m.lifetime_delivered_wh) && fmt(m.lifetime_delivered_wh) + " Wh"],
     ]) : $("div", {class: "empty"}, "Shown after a full reading.")),
     section("plug", "Charging", rows([
-      ["Charger", ch == null ? "—" : ch ? "Plugged in" : "Not plugged in"],
+      ["Charger", ch == null ? "—" : !ch ? "Not plugged in" : (p != null && p >= 100) ? "Plugged in · full"
+        : "Plugged in · charging"],
       ["Charging mode", m.charging_mode ?? "—"],
       ["Charge limit", m.charge_limit != null ? m.charge_limit + "%" : (m.charging_mode ? "None set" : "—")],
     ])),
@@ -500,7 +514,7 @@ function bikePage(b) {
 
   return [S.bikes.length > 1 ? $("button", {class: "ghost", style: "margin:-6px 0 10px -8px",
       onclick: () => go("")}, icon("back"), "All bikes") : null,
-    hero, stats, cols, live, settings, debugBox()];
+    hero, stats, messages, cols, live, settings, debugBox()];
 }
 
 function overview() {

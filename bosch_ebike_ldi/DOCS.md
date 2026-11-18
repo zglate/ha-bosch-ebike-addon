@@ -59,6 +59,15 @@ to it.
 - **Debug captures:** at the bottom, collapsed: download a run to send along
   with the app's log.
 
+### Notifications
+
+- **Fully charged:** once per charge (option `notify_full`). For a push to
+  your phone instead, make an automation on the bike's **Battery SoC**
+  sensor going to 100 while **Charger Connected** is on.
+- **Messages from the bike:** the page shows the bike's current messages
+  (Bosch fault codes, with what to do); the **Bike Messages** sensor has the
+  same text for automations.
+
 ### How it reads the bike
 
 Two ways, both read-only:

@@ -25,16 +25,18 @@ DEFAULTS = {
     "mcsp_connect": True,  # connect to the advertising bike as a central
     "mcsp_sweep": True,    # read every readable datapoint after start-up
     "gatt_listen": True,   # listen on every notifying characteristic
-    "raw_entities": True,  # one hidden HA entity per decoded datapoint
+    "raw_entities": False,  # one hidden HA entity per decoded datapoint (debugging)
     "capture": True,       # debug capture + report in /share/bosch_ebike
     "open_pairing_on_start": False,   # pairing only via the "Start pairing" button
     "mcsp_reconnect_hours": 6,        # after releasing the bike, wait this long
     # Firmware notifications: compare with Bosch's published versions daily.
     "firmware_check": True,
+    "notify_full": True,                # notification when the battery is full
     "firmware_page": "https://www.bosch-ebike.com/ca/service/software-update",
 }
 EXPLORER_OPTIONS = ("mcsp", "mcsp_connect", "mcsp_sweep", "gatt_listen",
-                    "raw_entities", "capture", "open_pairing_on_start", "firmware_check")
+                    "raw_entities", "capture", "open_pairing_on_start", "firmware_check",
+                    "notify_full")
 
 
 class ConfigError(ValueError):

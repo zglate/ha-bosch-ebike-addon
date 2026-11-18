@@ -49,6 +49,7 @@ import threading
 
 import ble_policy
 import datapoints
+import faults
 import firmware
 import mcsp
 import status
@@ -400,6 +401,7 @@ class EbikeBridge:
         self._bridge_link: str | None = None         # markdown link to the bridge device
         # Firmware: Bosch's published versions (cached across restarts).
         self._firmware_check = bool(config.get("firmware_check", True))
+        self._notify_full = bool(config.get("notify_full", True))
         self._firmware_page = config.get("firmware_page") or firmware.DEFAULT_PAGE
 
         mqtt_cfg = config["mqtt"]
@@ -1095,6 +1097,7 @@ class EbikeBridge:
 
         self._mqtt.publish_discovery(bike_addr, bike["name"])
         self._mqtt.publish_state(bike_addr, bike["state"])
+        self._check_full(bike_addr, soc, bike["state"].get("charger_connected"))
         log.debug("[%s] state update: %s", bike["name"], data)
 
     # ── Device lifecycle ──────────────────────────────────────────────────────
@@ -1308,6 +1311,15 @@ class EbikeBridge:
                 state["range_by_mode"] = ranges
                 self._mqtt.publish_range_discovery(addr, bike["name"], list(ranges))
                 self._mqtt.publish_mcsp_state(addr, state)
+        if dp_id in (0x0088, CHARGER_CONNECTED):   # charge / charger in a full reading
+            st = bike.get("mcsp_state", {})
+            soc_now = value if dp_id == 0x0088 else st.get("state_of_charge")
+            plugged = value if dp_id == CHARGER_CONNECTED else bike.get("_mcsp_charger")
+            if dp_id == CHARGER_CONNECTED:
+                bike["_mcsp_charger"] = bool(value)
+            self._check_full(addr, soc_now, plugged)
+        if dp_id == 0x109A:                       # the bike's current messages
+            bike.setdefault("mcsp_state", {})["messages"] = faults.find(value)
         entities = self._entities_by_id.get(dp_id)
         if not entities:
             return
@@ -1781,6 +1793,28 @@ class EbikeBridge:
         self._connect_called.pop(device_path, None)
         self._connected_at.pop(device_path, None)
         self._abandoned.discard(device_path)
+
+    def _check_full(self, addr: str, soc, charger) -> None:
+        """Once per charge: 100 % with the charger connected. Forgotten when
+        the charger is unplugged or the battery drops below 95 %."""
+        if soc is None and charger is None:
+            return
+        memory = self._explorer_state.setdefault(addr, {})
+        if memory.get("full_notified") and (charger is False or (soc is not None and soc < 95)):
+            memory.pop("full_notified")
+            self._save_state()
+            supervisor.dismiss(f"full_{addr.replace(':', '').lower()}")
+            return
+        if not self._notify_full or memory.get("full_notified") or not charger \
+                or soc is None or soc < 100:
+            return
+        memory["full_notified"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        self._save_state()
+        name = self._bike_name(addr)
+        log.info("[%s] Fully charged", addr)
+        supervisor.notify(f"full_{addr.replace(':', '').lower()}", f"{name} is fully charged",
+                          f"The battery is at 100 %. You can unplug the charger.\n\n"
+                          f"Details on {self._bridge_ref()}.")
 
     def _maybe_peek(self, device_path: str, addr: str) -> None:
         """Your bike advertises and nothing is connected to it: connect the

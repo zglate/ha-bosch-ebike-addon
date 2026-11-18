@@ -243,6 +243,8 @@ ENTITIES = [
     Entity(0x0D06, "head_unit_software", "Head Unit Software"),
     Entity(0x20E2, "update_ready_for_install", "Update Ready for Install (raw)"),
     Entity(0x2151, "active_issue_raw", "Active Issue (raw)"),
+    # The bike's current messages (Bosch fault codes), decoded with faults.json.
+    Entity(0x109A, "bike_messages", "Bike Messages"),
 ]
 
 
@@ -283,6 +285,9 @@ def entity_state(entity: Entity, value: Any, names: list[str] | None = None) -> 
     """The HA state for an entity value. Assist mode shows its name if known."""
     if entity.key in ("charging_mode", "charge_limit"):
         return charging_setting(entity.key, value)
+    if entity.key == "bike_messages":
+        import faults
+        return faults.summary(value)
     if entity.id == 0x1809 and isinstance(value, int) and names:
         if 0 <= value < len(names) and names[value]:
             return names[value]

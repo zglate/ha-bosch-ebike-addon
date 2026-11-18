@@ -53,6 +53,11 @@ configuration:
   open_pairing_on_start:
     name: Open pairing window on start
     description: Open the 5-minute pairing window every time the app starts.
+  notify_full:
+    name: Notify when fully charged
+    description: >-
+      A Home Assistant notification once per charge when the battery reaches
+      100 % with the charger connected.
   firmware_check:
     name: Firmware check
     description: >-

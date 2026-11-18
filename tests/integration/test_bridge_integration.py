@@ -141,7 +141,8 @@ class Harness:
         # Most tests exercise pairing, so open the window at start like the
         # add-on used to; the default (closed) has its own test.
         opts = {"mqtt_host": "127.0.0.1", "mqtt_port": MQTT_PORT,
-                "log_level": "debug", "open_pairing_on_start": True, **options}
+                "log_level": "debug", "open_pairing_on_start": True,
+                "raw_entities": True, **options}          # tests cover the debug entities too
         opts = {k: v for k, v in opts.items() if v is not None}
         opts_path = self.tmp / "options.json"
         opts_path.write_text(json.dumps(opts))

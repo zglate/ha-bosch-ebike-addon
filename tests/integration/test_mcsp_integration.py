@@ -430,6 +430,8 @@ def test_the_whole_journey_from_no_bike_to_firmware(harness):
         assert harness.mqtt.get(f"bosch_ebike/{NEW_SLUG}/firmware/controller/available") \
             == "offline"
         fw_note = f"bosch_ebike_firmware_{NEW_SLUG.replace('_', '')}_drive_unit"
+        wait_for(lambda: notes(sup, fw_note), "firmware notification")
+        time.sleep(0.5)
         assert len(notes(sup, fw_note)) == 1
 
         # 6. After a restart the same release is evaluated again but not re-announced.
@@ -817,3 +819,35 @@ def test_range_per_mode_reaches_the_page_and_home_assistant(harness):
              == {"ECO": 80, "TOUR+": 46}, "range per mode", timeout=60)
     config = harness.mqtt.json(f"homeassistant/sensor/bosch_ebike_{SLUG}_range_tour/config")
     assert config["name"] == "Range TOUR+" and config["unit_of_measurement"] == "km"
+
+
+def test_messages_from_the_bike_are_decoded(harness):
+    """The real bike's issue list: {1: 5660676} = Bosch code 566004."""
+    values = {**VALUES, "0x0089": "0801", "0x109a": "0a050884c0d902"}
+    harness.control.EnableMcsp(BIKE, json.dumps({"values": values,
+                                                 "answers_only_app_links": True}))
+    harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": BIKE}], env=PEEK)
+    harness.control.Advertise(BIKE, ADVERT, True)
+    state = wait_for(lambda: (s := harness.mqtt.json(MCSP_TOPIC) or {}).get("messages") and s,
+                     "messages", timeout=60)
+    assert state["messages"][0]["code"] == "566004"
+    assert "distracted" in state["bike_messages"]
+
+
+def test_one_fully_charged_notification_per_charge(harness):
+    sup = FakeSupervisor()
+    try:
+        harness.start_bridge(open_pairing_on_start=False,
+                             env={"SUPERVISOR_URL": sup.url, "SUPERVISOR_TOKEN": "tok"})
+        charging = field(1, 0) + field(2, 0) + field(10, 97) + field(12, 1234567) + field(22, 1)
+        harness.control.Connect(BIKE, True, True, dbus.ByteArray(charging))
+        wait_for(lambda: harness.mqtt.json(f"bosch_ebike/{SLUG}/state"), "LDI state")
+        assert notes(sup, f"bosch_ebike_full_{SLUG.replace('_', '')}") == []
+        harness.control.Notify(BIKE, dbus.ByteArray(field(10, 100)))       # full
+        wait_for(lambda: notes(sup, f"bosch_ebike_full_{SLUG.replace('_', '')}"), "notified")
+        harness.control.Notify(BIKE, dbus.ByteArray(field(10, 99)))
+        harness.control.Notify(BIKE, dbus.ByteArray(field(10, 100)))       # still the same charge
+        time.sleep(1)
+        assert len(notes(sup, f"bosch_ebike_full_{SLUG.replace('_', '')}")) == 1
+    finally:
+        sup.server.shutdown()
