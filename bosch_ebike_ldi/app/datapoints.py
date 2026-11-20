@@ -109,9 +109,33 @@ IDENTITY = {
     0x0D04: ("HeadUnit", "hardwareVersion"), 0x0D06: ("HeadUnit", "softwareVersion"),
 }
 
+# The bike's own ride computer (System Controller "activity"): the current
+# or last ride, kept on the bike, so also for rides without the phone.
+ACTIVITY = {
+    0x2242: "start_time",        # Unix seconds
+    0x2243: "moving_seconds",    # duration without stops, s
+    0x2245: "start_odometer_m",
+    0x2246: "average_speed",     # km/h
+    0x2247: "maximum_speed",
+    0x2248: "average_cadence",   # rpm
+    0x2249: "maximum_cadence",
+    0x224A: "average_power",     # W, the rider's
+    0x224B: "maximum_power",
+    0x224C: "average_heart_rate",
+    0x224D: "maximum_heart_rate",
+    0x224E: "energy_wh",
+    0x2251: "calories",
+    0x2252: "assist_m",          # per assist mode (incl. OFF), m
+    0x2253: "assist_motor_m",
+    0x2254: "rider_share",       # rider energy share
+    0x2255: "brakes",            # {1: normal, 2: ABS}
+    0x2256: "tricks",            # {1: jumps, 2: wheelies, 3: manuals, 13: stoppies, ...}
+}
+
 CURATED_READS = [
     0x208E,                                             # keyExchangePending (startup state)
     *IDENTITY,                                          # what each component is
+    *ACTIVITY,                                          # the ride computer
     0x20E2,                                             # update ready for install
     0x1819, 0x186D, 0x189D, 0x18AC, 0x184F,             # hours, motor odometer, statistics
     0x180C, 0x180D, 0x188B,                             # assist mode names and limits
@@ -245,10 +269,24 @@ ENTITIES = [
     Entity(0x2151, "active_issue_raw", "Active Issue (raw)"),
     # The bike's current messages (Bosch fault codes), decoded with faults.json.
     Entity(0x109A, "bike_messages", "Bike Messages"),
+    # The ride computer: last (or current) ride.
+    Entity(0x2243, "ride_moving_time", "Last Ride Moving Time", "s", "duration", "measurement"),
+    Entity(0x2246, "ride_average_speed", "Last Ride Average Speed", "km/h", "speed",
+           "measurement"),
+    Entity(0x224E, "ride_energy", "Last Ride Energy", "Wh", "energy", "measurement"),
+    Entity(0x2251, "ride_calories", "Last Ride Calories", "kcal", None, "measurement"),
+    Entity(0x2256, "ride_jumps", "Last Ride Jumps", None, None, "measurement"),
 ]
 
 
 CHARGING_MODES = {0: "Charge-time optimised", 1: "Battery-lifetime optimised"}
+def trick(value, field: int):
+    """A count from the trickStats message (absent = 0, protobuf's default)."""
+    if not isinstance(value, dict):
+        return None
+    return value.get(field, value.get(str(field), 0))
+
+
 REACHABLE_RANGE = 0x1857
 ASSIST_LONG_NAMES, ASSIST_SHORT_NAMES = 0x180D, 0x180C
 
@@ -285,6 +323,8 @@ def entity_state(entity: Entity, value: Any, names: list[str] | None = None) -> 
     """The HA state for an entity value. Assist mode shows its name if known."""
     if entity.key in ("charging_mode", "charge_limit"):
         return charging_setting(entity.key, value)
+    if entity.key == "ride_jumps":
+        return trick(value, 1)
     if entity.key == "bike_messages":
         import faults
         return faults.summary(value)

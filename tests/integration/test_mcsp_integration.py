@@ -863,3 +863,18 @@ def test_the_bike_can_read_what_this_accessory_is(harness):
     assert info["2a25"] == "HA-334455"                 # serial: end of the adapter address
     assert info["2a28"] == info["2a26"]                # software (shown) = firmware = version
     assert "2a50" not in info and "2a23" not in info   # experiment over: not served
+
+
+def test_the_bikes_ride_computer_reaches_the_page_and_home_assistant(harness):
+    values = {**VALUES, "0x0089": "0801",
+              "0x2243": "08902b",          # moving time 5520 s
+              "0x2245": "08eaf603",        # start odometer 64362 m
+              "0x2256": "08071001"}        # tricks: 7 jumps, 1 wheelie
+    harness.control.EnableMcsp(BIKE, json.dumps({"values": values,
+                                                 "answers_only_app_links": True}))
+    harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": BIKE}], env=PEEK)
+    harness.control.Advertise(BIKE, ADVERT, True)
+    state = wait_for(lambda: (s := harness.mqtt.json(MCSP_TOPIC) or {}).get("ride_jumps") is not None
+                     and s, "ride computer", timeout=60)
+    assert state["ride_jumps"] == 7 and state["ride_moving_time"] == 5520
+    assert state["ride"]["start_odometer_m"] == 64362 and state["ride"]["tricks"]["2"] == 1

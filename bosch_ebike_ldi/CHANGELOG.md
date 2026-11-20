@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.8.0 – charging & riding
+
+- **Charging & riding** on the page:
+  - **during a charge:** charging now, with "full in about …";
+  - **past charges:** the last charge (from–to % and how long it took), how long a full charge takes on average, and how many charges and km have been recorded;
+  - **past rides:** the last ride between charges (km, % of the battery, Wh), your energy per km, and what a full battery is good for the way you ride.
+
+  Built from the live data (the bike streams it for the whole charge) and the full readings. On first start the history is rebuilt from the debug captures already on the Pi.
+- Battery health shows whether it changed since the first reading
+  ("same as on Nov 16").
+- **Last ride, from the bike**: the bike's own ride computer, also for rides
+  without the phone:
+  - start time, distance and moving time (what Strava's manual entry needs);
+  - average and top speed, your power, cadence and heart rate;
+  - energy and calories;
+  - distance per assist mode;
+  - jumps, wheelies, manuals and stoppies, and brake events (ABS too).
+
+  Read at every full reading. Sensors in Home Assistant: moving time, average speed, energy, calories and jumps of the last ride.
+
 ## 0.7.7
 
 - Product-code experiment done: the Flow app shows the accessory's model as

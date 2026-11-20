@@ -51,6 +51,7 @@ import ble_policy
 import datapoints
 import device_info
 import faults
+import stats
 import firmware
 import mcsp
 import status
@@ -1099,6 +1100,8 @@ class EbikeBridge:
         self._mqtt.publish_discovery(bike_addr, bike["name"])
         self._mqtt.publish_state(bike_addr, bike["state"])
         self._check_full(bike_addr, soc, bike["state"].get("charger_connected"))
+        self._history_sample(bike_addr, soc, bike["state"].get("charger_connected"),
+                             bike["state"].get("odometer_km"))
         log.debug("[%s] state update: %s", bike["name"], data)
 
     # ── Device lifecycle ──────────────────────────────────────────────────────
@@ -1312,6 +1315,18 @@ class EbikeBridge:
                 state["range_by_mode"] = ranges
                 self._mqtt.publish_range_discovery(addr, bike["name"], list(ranges))
                 self._mqtt.publish_mcsp_state(addr, state)
+        if dp_id == 0x0088:
+            self._history_sample(addr, value, None, None)
+        elif dp_id == CHARGER_CONNECTED:
+            self._history_sample(addr, None, bool(value), None)
+        elif dp_id == 0x1818 and isinstance(value, (int, float)):
+            self._history_sample(addr, None, None, value / 1000)
+        elif dp_id == 0x00D8 and value is not None:
+            memory = self._explorer_state.setdefault(addr, {})
+            if "health_first" not in memory:
+                memory["health_first"] = {"at": datetime.now(timezone.utc).isoformat(
+                    timespec="seconds"), "value": value}
+                self._save_state()
         if dp_id in (0x0088, CHARGER_CONNECTED):   # charge / charger in a full reading
             st = bike.get("mcsp_state", {})
             soc_now = value if dp_id == 0x0088 else st.get("state_of_charge")
@@ -1319,6 +1334,9 @@ class EbikeBridge:
             if dp_id == CHARGER_CONNECTED:
                 bike["_mcsp_charger"] = bool(value)
             self._check_full(addr, soc_now, plugged)
+        if dp_id in datapoints.ACTIVITY:          # the bike's ride computer
+            ride = bike.setdefault("mcsp_state", {}).setdefault("ride", {})
+            ride[datapoints.ACTIVITY[dp_id]] = value
         if dp_id == 0x109A:                       # the bike's current messages
             bike.setdefault("mcsp_state", {})["messages"] = faults.find(value)
         entities = self._entities_by_id.get(dp_id)
@@ -1662,6 +1680,11 @@ class EbikeBridge:
                     "last_read": memory.get("mcsp_window"),
                     "last_good": last_good,
                     "live_setup": bool(memory.get("ldi_accessory") or bike.get("ldi")),
+                    "stats": stats.summary(memory.get("history") or {}, (
+                        saved.get("mcsp", {}).get("system_usable_energy")
+                        or (bike.get("mcsp_state") or {}).get("system_usable_energy")
+                        or self._battery_wh(addr))),
+                    "health_first": memory.get("health_first"),
                     "firmware": fw,
                 })
             self._ui_snapshot = {
@@ -1809,6 +1832,44 @@ class EbikeBridge:
         self._connect_called.pop(device_path, None)
         self._connected_at.pop(device_path, None)
         self._abandoned.discard(device_path)
+
+    def _history_sample(self, addr: str, soc, charger, km) -> None:
+        """Charging and riding history (stats.py); saved when a charge or ride
+        starts or ends."""
+        try:
+            h = self._explorer_state.setdefault(addr, {}).setdefault("history", {})
+            if stats.update(h, time.time(), soc, charger, km):
+                self._save_state()
+        except Exception as exc:                 # history must never break readings
+            log.debug("History: %s", exc)
+
+    def _backfill_history(self) -> None:
+        """Once: rebuild the history from the debug captures already on disk,
+        so charges and rides from before this version show up."""
+        base = Path(self._capture.run_dir).parent if self._capture.run_dir else None
+        todo = [a for a in self._known_bikes
+                if not self._explorer_state.get(a, {}).get("history_backfilled")]
+        if base is None or not todo:
+            return
+        paths = sorted(str(p) for p in base.glob("run-*/capture-*.jsonl"))
+
+        def work():
+            results = {a: stats.samples_from_captures(paths, a) for a in todo}
+            GLib.idle_add(apply, results)
+
+        def apply(results):
+            for addr, samples in results.items():
+                h = {}
+                for t, soc, charger, km in samples:
+                    stats.update(h, t, soc, charger, km)
+                memory = self._explorer_state.setdefault(addr, {})
+                memory["history"] = h
+                memory["history_backfilled"] = True
+                log.info("[%s] History rebuilt from %d earlier samples: %d charges, %d rides",
+                         addr, len(samples), len(h.get("sessions", [])), len(h.get("rides", [])))
+            self._save_state()
+            return False
+        threading.Thread(target=work, daemon=True).start()
 
     def _check_full(self, addr: str, soc, charger) -> None:
         """Once per charge: 100 % with the charger connected. Forgotten when
@@ -2328,6 +2389,7 @@ class EbikeBridge:
                               lambda: GLib.idle_add(self.start_window))
         self._build_ui_state()
         GLib.timeout_add_seconds(2, self._build_ui_state)
+        self._backfill_history()
         webui.start(str(Path(self._capture.run_dir).parent) if self._capture.run_dir
                     else None, state=lambda: self._ui_snapshot, action=self.ui_action)
         # Firmware: first check a minute after start, then daily.

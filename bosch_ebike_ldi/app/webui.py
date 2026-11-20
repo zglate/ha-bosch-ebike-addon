@@ -219,7 +219,10 @@ svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stro
 /* details */
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
 .sec h3{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:650;margin:0 0 12px}
-.rows{display:grid;grid-template-columns:1fr auto;row-gap:10px;column-gap:16px}
+.rows{display:grid;grid-template-columns:max-content 1fr;row-gap:10px;column-gap:24px}
+.wide{grid-column:1/-1}
+.wide .rows{grid-template-columns:max-content 1fr max-content 1fr}
+@media (max-width:720px){.wide .rows{grid-template-columns:max-content 1fr}}
 .rows .l{color:var(--muted)}.rows .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
 .chip{font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;margin-left:8px;white-space:nowrap}
 .chip.ok{background:var(--soft);color:var(--muted)}
@@ -342,6 +345,14 @@ function ago(iso) {
   return Math.round(s / 86400) + " days ago";
 }
 const charge = b => b.ldi.battery_soc ?? b.mcsp.state_of_charge ?? null;
+function dur(min) {
+  if (min == null) return null;
+  const h = Math.floor(min / 60), m = Math.round(min % 60);
+  return h ? h + " h " + (m ? m + " min" : "") : m + " min";
+}
+function day(t) {
+  return new Date(t * 1000).toLocaleDateString(undefined, {month: "short", day: "numeric"});
+}
 const km = b => b.ldi.odometer_km ?? (b.mcsp.odometer_m != null ? b.mcsp.odometer_m / 1000 : null);
 const charging = b => b.ldi.charger_connected ?? b.mcsp.charging_active ?? null;
 const hasDetails = b => b.mcsp.battery_health != null || b.mcsp.charge_cycles != null;
@@ -396,6 +407,73 @@ function section(ic, title, content) {
   return $("div", {class: "card pad sec"}, $("h3", {}, icon(ic), title), content);
 }
 
+function healthHint(b) {
+  const f = b.health_first, m = b.mcsp;
+  if (!f || m.battery_health == null) return null;
+  const when = new Date(f.at).toLocaleDateString(undefined, {month: "short", day: "numeric"});
+  return f.value === m.battery_health ? "same as on " + when : "was " + f.value + "% on " + when;
+}
+function statsCard(b) {
+  const s = b.stats || {};
+  const lc = s.last_charge, ch = s.charging, lr = s.last_ride;
+  const rows = [];
+  if (ch && !ch.full) rows.push(["Charging now", (ch.soc != null ? Math.round(ch.soc) + "%" : "—") +
+    (ch.minutes_to_full != null ? " · full in about " + dur(ch.minutes_to_full) : "")]);
+  if (lc) rows.push(["Last charge", Math.round(lc.start_soc) + "% → " + Math.round(lc.end_soc) +
+    "% in " + dur(lc.minutes) + " (" + day(lc.start_t) + ")"]);
+  if (s.full_charge_minutes) rows.push(["A full charge takes about", dur(s.full_charge_minutes)]);
+  if (lr) rows.push(["Last ride", fmt(lr.km, 1) + " km" + (lr.used_pct != null ? " · " +
+    Math.round(lr.used_pct) + "% of the battery" : "") + (lr.wh ? " · " + fmt(lr.wh) + " Wh" : "")]);
+  if (s.wh_per_km) rows.push(["Energy per km", fmt(s.wh_per_km, 1) + " Wh/km"]);
+  if (s.range_full_km) rows.push(["A full battery is good for", "about " + s.range_full_km +
+    " km the way you ride"]);
+  if (s.charges) rows.push(["Recorded", s.charges + (s.charges === 1 ? " charge" : " charges") +
+    (s.km_recorded ? " · " + fmt(s.km_recorded, 1) + " km of riding" : "")]);
+  return section("cycle", "Charging & riding", rows.length ? rowsEl(rows)
+    : $("div", {class: "empty"}, "Builds up as you charge and ride."));
+}
+function rideCard(b) {
+  const r = (b.mcsp || {}).ride || {}, m = b.mcsp || {};
+  if (r.start_time == null && r.moving_seconds == null) return null;
+  const odo = m.odometer_m ?? (b.ldi.odometer_km != null ? b.ldi.odometer_km * 1000 : null);
+  const km = odo != null && r.start_odometer_m != null ? (odo - r.start_odometer_m) / 1000 : null;
+  const when = r.start_time ? new Date(r.start_time * 1000).toLocaleString(undefined,
+    {weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"}) : null;
+  const t = r.tricks || {}, br = r.brakes || {};
+  const n = (o, k) => o[k] ?? o[String(k)] ?? 0;
+  const tricks = [["jump", n(t, 1)], ["wheelie", n(t, 2)], ["manual", n(t, 3)], ["stoppie", n(t, 13)]]
+    .filter(([, c]) => c).map(([w, c]) => c + " " + w + (c === 1 ? "" : "s")).join(" · ");
+  const names = (m.range_by_mode ? ["OFF", ...Object.keys(m.range_by_mode)] : null);
+  const modes = Array.isArray(r.assist_m) && names ? r.assist_m.map((v, i) => [names[i], v])
+    .filter(([nm, v]) => nm && v > 0).map(([nm, v]) => nm + " " + fmt(v / 1000, 1) + " km").join(" · ") : null;
+  const rows = [
+    ["Started", when],
+    ["Distance", km != null && km >= 0 ? fmt(km, 1) + " km" : null],
+    ["Moving time", r.moving_seconds != null ? dur(r.moving_seconds / 60) : null],
+    ["Average · top speed", r.average_speed != null ? fmt(r.average_speed, 1) + " · " +
+      fmt(r.maximum_speed, 1) + " km/h" : null],
+    ["Your power (avg · max)", r.average_power ? fmt(r.average_power) + " · " + fmt(r.maximum_power) + " W" : null],
+    ["Cadence (avg · max)", r.average_cadence ? fmt(r.average_cadence) + " · " + fmt(r.maximum_cadence) + " rpm" : null],
+    ["Heart rate (avg · max)", r.average_heart_rate ? fmt(r.average_heart_rate) + " · " +
+      fmt(r.maximum_heart_rate) + " bpm" : null],
+    ["Energy used", r.energy_wh != null ? fmt(r.energy_wh) + " Wh" : null],
+    ["Calories", r.calories ? fmt(r.calories) + " kcal" : null],
+    ["Assist modes", modes || null],
+    ["Tricks", tricks || (r.tricks ? "none" : null)],
+    ["Brake events", r.brakes ? n(br, 1) + (n(br, 2) ? " · " + n(br, 2) + " with ABS" : "") : null],
+  ].filter(([, v]) => v != null && v !== "");
+  const strava = km != null && r.moving_seconds ? "For Strava's manual entry: " + fmt(km, 1) +
+    " km, moving time " + dur(r.moving_seconds / 60) + (when ? ", started " + when : "") + "." : null;
+  const card = section("road", "Last ride, from the bike", [rowsEl(rows),
+    $("div", {class: "hint", style: "margin-top:12px"}, "The bike's own ride computer, read at the " +
+      "last full reading (no map: the route needs the phone's GPS)." + (strava ? " " + strava : ""))]);
+  card.classList.add("wide");
+  return card;
+}
+function rowsEl(list) {
+  return $("div", {class: "rows"}, list.map(([l, r]) => [$("div", {class: "l"}, l), $("div", {class: "r"}, r)]));
+}
+
 function bikePage(b) {
   const m = b.mcsp, [cls, text] = status(b), p = charge(b), ch = charging(b);
   const details = hasDetails(b);
@@ -423,8 +501,8 @@ function bikePage(b) {
           "keep the bike switched on and parked; the Flow app can't connect for about a minute.")));
 
   const stats = $("div", {class: "stats"},
-    stat("heart", "Battery health", fmt(m.battery_health), "%", details ? null : "after a full reading",
-         m.battery_health ?? null),
+    stat("heart", "Battery health", fmt(m.battery_health), "%", !details ? "after a full reading"
+         : healthHint(b), m.battery_health ?? null),
     stat("cycle", "Charge cycles", fmt(m.charge_cycles, 1), null, details ? "full cycles so far" : "after a full reading"),
     stat("road", "Distance", fmt(km(b)), "km", "odometer"),
     stat("clock", "Motor hours", fmt(m.motor_support_hours), "h",
@@ -448,6 +526,8 @@ function bikePage(b) {
       f.measures ? $("div", {class: "small", style: "margin-top:4px"}, f.measures) : null,
       $("div", {class: "hint"}, "Code " + f.code)))) : null;
   const cols = $("div", {class: "cols"},
+    rideCard(b),
+    statsCard(b),
     section("battery", "Battery", details || p != null ? rows([
       ["Charge", p != null ? Math.round(p) + "%" : null],
       ["Energy left", fmt(m.remaining_energy) && fmt(m.remaining_energy) + " Wh"],
