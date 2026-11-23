@@ -355,13 +355,18 @@ function day(t) {
 }
 const km = b => b.ldi.odometer_km ?? (b.mcsp.odometer_m != null ? b.mcsp.odometer_m / 1000 : null);
 const charging = b => b.ldi.charger_connected ?? b.mcsp.charging_active ?? null;
+// The charge ring only shows what the bike says now: while it isn't
+// connected the charge is unknown (the last value could be days old).
+const current = b => b.live || b.reading;
+const ringPct = b => current(b) ? charge(b) : null;
+const ringSub = b => current(b) ? (charging(b) ? "charging" : null) : "unknown";
 const hasDetails = b => b.mcsp.battery_health != null || b.mcsp.charge_cycles != null;
 
 function status(b) {
   if (b.reading) return ["busy", "Reading full details…"];
   if (b.live) return ["live", charging(b) ? "Connected · charging" : "Connected"];
   const seen = ago(b.last_seen);
-  return ["", seen ? "Asleep · seen " + seen : "Not seen yet"];
+  return ["", seen ? "Not connected · seen " + seen : "Not seen yet"];
 }
 const REASON = {peek: "when plugged in", charging: "while charging", button: "on request", explored: "on request"};
 function freshness(b) {
@@ -376,7 +381,8 @@ function problem(b) {
   if (o.startsWith("not charging") || o.startsWith("no charger answer") || o.startsWith("stopped")
       || o === "replies" || o === "app stopped") return null;
   let why = "it didn't finish";
-  if (o.startsWith("no advertisement")) why = "the bike was asleep. Switch it on and try again";
+  if (o.startsWith("no advertisement")) why = "nothing heard from the bike. Switch it on near " +
+    "Home Assistant and try again";
   else if (o.startsWith("connect failed")) why = "couldn't connect. Close the Flow app and try again";
   else if (o.includes("sent nothing")) why = "the bike didn't answer";
   else if (o.includes("reconnected for LDI")) why = "the bike reconnected for live data first; try again";
@@ -417,7 +423,7 @@ function statsCard(b) {
   const s = b.stats || {};
   const lc = s.last_charge, ch = s.charging, lr = s.last_ride;
   const rows = [];
-  if (ch && !ch.full) rows.push(["Charging now", (ch.soc != null ? Math.round(ch.soc) + "%" : "—") +
+  if (ch && !ch.full && b.live) rows.push(["Charging now", (ch.soc != null ? Math.round(ch.soc) + "%" : "—") +
     (ch.minutes_to_full != null ? " · full in about " + dur(ch.minutes_to_full) : "")]);
   if (lc) rows.push(["Last charge", Math.round(lc.start_soc) + "% → " + Math.round(lc.end_soc) +
     "% in " + dur(lc.minutes) + " (" + day(lc.start_t) + ")"]);
@@ -476,13 +482,15 @@ function rowsEl(list) {
 
 function bikePage(b) {
   const m = b.mcsp, [cls, text] = status(b), p = charge(b), ch = charging(b);
+  const seenDay = b.last_seen ? new Date(b.last_seen).toLocaleDateString(undefined,
+    {month: "short", day: "numeric"}) : null;
   const details = hasDetails(b);
   const fw = b.firmware || [];
   const updates = fw.filter(f => f.newer);
   const issue = problem(b);
 
   const hero = $("div", {class: "card pad hero"},
-    ring(p, ch ? "charging" : null),
+    ring(ringPct(b), ringSub(b)),
     $("div", {},
       $("h2", {class: "name"}, b.name),
       $("div", {class: "model"}, [b.model, b.battery].filter(Boolean).join(" · ") || "Bosch smart system"),
@@ -529,7 +537,8 @@ function bikePage(b) {
     rideCard(b),
     statsCard(b),
     section("battery", "Battery", details || p != null ? rows([
-      ["Charge", p != null ? Math.round(p) + "%" : null],
+      ["Charge", p == null ? null : current(b) ? Math.round(p) + "%"
+        : "Unknown" + (seenDay ? " · was " + Math.round(p) + "% on " + seenDay : "")],
       ["Energy left", fmt(m.remaining_energy) && fmt(m.remaining_energy) + " Wh"],
       ["Usable energy when full", fmt(m.system_usable_energy) && fmt(m.system_usable_energy) + " Wh"],
       ["Capacity", fmt(m.battery_capacity, 1) && fmt(m.battery_capacity, 1) + " Ah"],
@@ -537,8 +546,8 @@ function bikePage(b) {
       ["Energy delivered so far", fmt(m.lifetime_delivered_wh) && fmt(m.lifetime_delivered_wh) + " Wh"],
     ]) : $("div", {class: "empty"}, "Shown after a full reading.")),
     section("plug", "Charging", rows([
-      ["Charger", ch == null ? "—" : !ch ? "Not plugged in" : (p != null && p >= 100) ? "Plugged in · full"
-        : "Plugged in · charging"],
+      ["Charger", !current(b) ? "Unknown" : ch == null ? "—" : !ch ? "Not plugged in"
+        : (p != null && p >= 100) ? "Plugged in · full" : "Plugged in · charging"],
       ["Charging mode", m.charging_mode ?? "—"],
       ["Charge limit", m.charge_limit != null ? m.charge_limit + "%" : (m.charging_mode ? "None set" : "—")],
     ])),
@@ -601,7 +610,7 @@ function overview() {
   return [$("div", {class: "grid"}, S.bikes.map(b => {
     const [cls, text] = status(b), m = b.mcsp;
     return $("div", {class: "card pad bike", onclick: () => go(b.address)},
-      ring(charge(b), charging(b) ? "charging" : null),
+      ring(ringPct(b), ringSub(b)),
       $("div", {},
         $("div", {style: "font-weight:650;font-size:17px"}, b.name),
         $("div", {class: "pill " + cls, style: "margin-top:6px"}, $("span", {class: "d"}), text),

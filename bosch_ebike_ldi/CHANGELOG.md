@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.2 – the page doesn't pass off old values as current
+
+- While the bike isn't connected, its charge is **unknown**: the ring shows
+  "—", the Battery card says "Unknown · was 100 % on Nov 20", the charger is
+  "Unknown", and "Charging now" only shows while connected. The status says
+  "Not connected · seen …" rather than guessing that the bike is asleep.
+- A reading that heard nothing from the bike says so, instead of "the bike
+  was asleep".
+
 ## 0.8.1 – remembers when it last saw the bike
 
 - **"Not seen yet" after a restart is fixed.** When the bike was last heard
