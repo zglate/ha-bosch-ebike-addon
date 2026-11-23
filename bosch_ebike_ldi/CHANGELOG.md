@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.8.1 – remembers when it last saw the bike
+
+- **"Not seen yet" after a restart is fixed.** When the bike was last heard
+  is now kept in `/data`, and filled in from the last reading and the
+  charging history, so the page says "seen 2 days ago" instead.
+- **Much smaller debug captures.** The background listen every minute no
+  longer writes every nearby Bluetooth device to the capture (about 10 MB a
+  day); it is captured when a Bosch bike is heard, and once an hour.
+- **Quieter log.** The minute-by-minute "Scanning" and five-minute
+  "Advertising" lines are only logged when something changes (`debug` shows
+  them all).
+- Documentation brought up to date: the page, checks and full readings, the
+  option descriptions, the store description, README and DESIGN (which still
+  described 0.4).
+- Removed two pieces of dead code.
+
 ## 0.8.0 – charging & riding
 
 - **Charging & riding** on the page:

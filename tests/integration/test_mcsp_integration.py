@@ -793,6 +793,29 @@ def test_the_page_keeps_the_last_full_reading_after_a_restart(harness):
     assert after["mcsp"].get("charge_cycles") is not None and after["model"]
 
 
+def test_last_seen_survives_a_restart_without_a_full_reading(harness):
+    """Seen only by a short check (not charging): after a restart the page
+    must still say when, not "not seen yet"."""
+    harness.control.EnableMcsp(BIKE, bike_values(charging=False))
+    harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": BIKE}], env=PEEK)
+    harness.control.Advertise(BIKE, ADVERT, True)
+    assert window_end(harness)["outcome"].startswith("not charging")
+    harness.stop_bridge()
+    harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": BIKE}], env=PEEK,
+                         wait=False)
+
+    def bike():
+        try:
+            state = json.loads(urllib.request.urlopen("http://127.0.0.1:8099/api/state",
+                                                      timeout=2).read())
+            return next(iter(state.get("bikes", [])), None)
+        except OSError:
+            return None
+    after = wait_for(lambda: (b := bike()) and b, "page after restart")
+    assert after["last_seen"] and after["last_good"] is None
+    assert after["status"] != "Not seen yet"
+
+
 def test_the_live_data_link_is_not_asked_again_once_it_stayed_silent(harness):
     harness.control.EnableMcsp(BIKE, json.dumps({"values": VALUES,
                                                  "answers_only_app_links": True}))

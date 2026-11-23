@@ -595,9 +595,16 @@ class EbikeBridge:
         )
         mode = ("PAIRING: discoverable + solicitation" if pairing
                 else "private reconnect: no solicitation, not discoverable")
+
+        def registered():
+            # The watchdog re-registers every few minutes: log only changes.
+            changed = getattr(self, "_adv_logged", None) != (local_name, mode)
+            self._adv_logged = (local_name, mode)
+            (log.info if changed else log.debug)("Advertising '%s' (%s)", local_name, mode)
+
         mgr.RegisterAdvertisement(
             ADV_PATH, {},
-            reply_handler=lambda: log.info("Advertising '%s' (%s)", local_name, mode),
+            reply_handler=registered,
             error_handler=lambda e: log.error("RegisterAdvertisement failed: %s", e),
         )
         return adv
@@ -658,6 +665,12 @@ class EbikeBridge:
         self._scanning = True
         self._scan_heard: dict[str, dict] = {}
         self._scan_paths = set()
+        # The background listen (bike added, not connected) runs every minute:
+        # it is logged and captured only when it hears a Bosch bike, plus an
+        # hourly device summary. Other scans (adding a bike, a reading) always.
+        routine = bool(self._known_bikes) and self._window is None \
+            and not self._window_open() and not self._adopting
+        self._scan_routine = routine
         try:
             # An RSSI (proximity) filter, even one letting everything through,
             # makes BlueZ report every advertisement. Without it BlueZ only
@@ -668,8 +681,9 @@ class EbikeBridge:
             log.debug("SetDiscoveryFilter: %s", exc)
 
         def started():
-            log.info("Scanning for Bosch eBikes (%d s)", seconds)
-            self._capture.event("scan_start", seconds=seconds)
+            (log.debug if routine else log.info)("Scanning for Bosch eBikes (%d s)", seconds)
+            if not routine:
+                self._capture.event("scan_start", seconds=seconds)
 
         def failed(e):
             log.warning("Bluetooth scan could not start: %s", e)
@@ -690,7 +704,9 @@ class EbikeBridge:
                 (log.debug if self._known_bikes else log.info)(
                     "Scan done: no Bosch eBike heard (is it switched on and within "
                     "range of the Home Assistant host?)")
-            self._capture.event("scan_result", heard=heard)
+            quiet = getattr(self, "_scan_routine", False) and not heard
+            if not quiet:
+                self._capture.event("scan_result", heard=heard)
             self._log_scan_devices(loud=bool(heard) or not self._known_bikes)
             self._last_scan_heard = len(heard)
             if self._nearby.prune():
@@ -698,7 +714,7 @@ class EbikeBridge:
             self._refresh_setup()
             dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, self._adapter_path),
                            ADAPTER_IFACE).StopDiscovery(
-                reply_handler=lambda: self._capture.event("scan_stop"),
+                reply_handler=lambda: None if quiet else self._capture.event("scan_stop"),
                 error_handler=lambda e: self._capture.event("scan_stop_error", error=str(e)))
         return False
 
@@ -723,7 +739,6 @@ class EbikeBridge:
                                      props.get("ManufacturerData", {}).keys()],
                 "service_uuids": [str(u) for u in props.get("UUIDs", [])],
                 "service_data": [str(k) for k in props.get("ServiceData", {}).keys()]})
-        self._capture.event("scan_devices", devices=devices)
         ids: dict[str, int] = {}
         for d in devices:
             for m in d["manufacturer_ids"] or ["none"]:
@@ -733,6 +748,10 @@ class EbikeBridge:
         hourly = time.monotonic() - self._last_scan_summary >= 3600
         if hourly:
             self._last_scan_summary = time.monotonic()
+        if loud or hourly:
+            # Every device heard, every minute, was ~10 MB a day: only when
+            # it matters, plus once an hour.
+            self._capture.event("scan_devices", devices=devices)
         (log.info if loud or hourly else log.debug)(
                  "Scan heard %d Bluetooth devices in total; manufacturer IDs: %s; "
                  "strongest named: %s", len(devices),
@@ -830,10 +849,6 @@ class EbikeBridge:
     def _publish_pairing_state(self) -> None:
         if self._mqtt is not None:
             self._mqtt.publish_pairing_active(self._window_open())
-
-    def _bike_paths(self) -> set[str]:
-        """BlueZ object paths of bikes we have seen connected."""
-        return {b["device_path"] for b in self._bikes.values() if b.get("device_path")}
 
     def _all_known_bikes_connected(self) -> bool:
         """True if every bike listed in config is currently connected.
@@ -1020,6 +1035,9 @@ class EbikeBridge:
             bike["char_path"] = None
             self._end_session(bike_addr, "disconnected")
         self._capture.event("bike_offline", bike=bike_addr)
+        if bike_addr in self._known_bikes:
+            self._explorer_state.setdefault(bike_addr, {})["last_seen_saved"] = 0
+            self._seen(bike_addr)                    # saved now: the last moment heard
         if bike:
             bike["ldi"] = False
             self._refresh_bike(bike_addr)
@@ -1096,6 +1114,7 @@ class EbikeBridge:
             bike["_last_seen_mono"] = now_m
             bike["state"]["last_seen"] = datetime.now(timezone.utc).isoformat(
                 timespec="seconds")
+            self._seen(bike_addr)
 
         self._mqtt.publish_discovery(bike_addr, bike["name"])
         self._mqtt.publish_state(bike_addr, bike["state"])
@@ -1163,8 +1182,7 @@ class EbikeBridge:
                                      if self._bikes[bike_addr]["central"]
                                      else "the bike connected first (LDI)")
         self._bikes[bike_addr]["ldi"] = bool(char_path)
-        self._bikes[bike_addr]["last_seen"] = datetime.now(timezone.utc).isoformat(
-            timespec="seconds")
+        self._seen(bike_addr)
         self._bosch_paths.add(device_path)
         self._capture.event("bike_connected", bike=bike_addr, path=device_path,
                             ldi=bool(char_path), mcsp=has_mcsp,
@@ -1284,7 +1302,7 @@ class EbikeBridge:
     def _on_mcsp_value(self, addr: str, dp_id: int, value) -> None:
         """Publish an MCSP datapoint that has a Home Assistant entity."""
         bike = self._bikes[addr]
-        bike["last_seen"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        self._seen(addr)
         w = self._window
         if dp_id == CHARGER_CONNECTED and w is not None and w["addr"] == addr \
                 and w["reason"] == "peek" and w.get("charging") is None:
@@ -1389,6 +1407,8 @@ class EbikeBridge:
             self._capture.event("advert", address=addr, live=live, **info)
         if not live:
             return
+        if addr in self._known_bikes:
+            self._seen(addr)
         if self._scanning:
             self._scan_heard[addr] = {"rssi": info.get("rssi"), "pairable": info.get("pairable")}
         # The Nearby dropdown and Setup Status show every Bosch bike heard.
@@ -1513,7 +1533,7 @@ class EbikeBridge:
         w = self._window if self._window and self._window["addr"] == addr else None
         state, attributes = status.bike_status(
             bool(bike.get("ldi")), bike.get("mcsp_status"), None,
-            bike.get("last_seen"), time.time(), window_phase=w and w["phase"],
+            self._last_seen(addr), time.time(), window_phase=w and w["phase"],
             last_check=self._explorer_state.get(addr, {}).get("mcsp_window"))
         self._mqtt.publish_bike_status(addr, bike["name"], state, attributes)
 
@@ -1628,6 +1648,42 @@ class EbikeBridge:
                        if b["address"] == addr and b.get("name")), None)
         return saved or listed or f"eBike {addr[-5:].replace(':', '')}"
 
+    SEEN_SAVE_SEC = 600          # how often "last seen" alone is written to /data
+
+    def _seen(self, addr: str) -> None:
+        """The bike was just heard (advert, connection, data). Kept in /data so
+        the page doesn't say "not seen yet" after an add-on restart."""
+        now = datetime.now(timezone.utc)
+        stamp = now.isoformat(timespec="seconds")
+        if addr in self._bikes:
+            self._bikes[addr]["last_seen"] = stamp
+        if addr not in self._known_bikes:
+            return
+        memory = self._explorer_state.setdefault(addr, {})
+        memory["last_seen"] = stamp
+        if now.timestamp() - memory.get("last_seen_saved", 0) >= self.SEEN_SAVE_SEC:
+            memory["last_seen_saved"] = now.timestamp()
+            self._save_state()
+
+    def _last_seen(self, addr: str) -> str | None:
+        """Latest time the bike was heard: this run, or remembered from before
+        (saved, last full reading, charging history)."""
+        memory = self._explorer_state.get(addr, {})
+        found = [(self._bikes.get(addr) or {}).get("last_seen"), memory.get("last_seen"),
+                 (memory.get("mcsp_last_read") or {}).get("at")]
+        t = ((memory.get("history") or {}).get("last") or {}).get("t")
+        if isinstance(t, (int, float)):
+            found.append(datetime.fromtimestamp(t, timezone.utc).isoformat(timespec="seconds"))
+        best = None
+        for value in found:
+            try:
+                when = datetime.fromisoformat(value) if value else None
+            except (TypeError, ValueError):
+                continue
+            if when is not None and when.tzinfo is not None and (best is None or when > best[0]):
+                best = (when, value)
+        return best[1] if best else None
+
     def _battery_wh(self, addr: str) -> int:
         return self._explorer_state.get(addr, {}).get("battery_wh") \
             or battery_wh_for(self._cfg, addr)
@@ -1642,9 +1698,10 @@ class EbikeBridge:
                 bike = self._bikes.get(addr) or {}
                 memory = self._explorer_state.get(addr, {})
                 w = self._window if self._window and self._window["addr"] == addr else None
+                last_seen = self._last_seen(addr)
                 state, _ = status.bike_status(
                     bool(bike.get("ldi") and bike.get("char_path")), bike.get("mcsp_status"),
-                    None, bike.get("last_seen"), time.time(), window_phase=w and w["phase"],
+                    None, last_seen, time.time(), window_phase=w and w["phase"],
                     last_check=memory.get("mcsp_window"))
                 fw = []
                 for key, title, component in firmware.COMPONENTS:
@@ -1673,7 +1730,7 @@ class EbikeBridge:
                     "ldi": {k: bike.get("state", {}).get(k) for k in (
                         "battery_soc", "odometer_km", "charger_connected", "speed_kmh",
                         "rider_power", "energy_remaining_wh")},
-                    "last_seen": bike.get("last_seen"),
+                    "last_seen": last_seen,
                     "mcsp": {**saved.get("mcsp", {}), **(bike.get("mcsp_state") or {})},
                     "model": identity.get("DriveUnit", {}).get("productName"),
                     "battery": identity.get("Battery", {}).get("productName"),

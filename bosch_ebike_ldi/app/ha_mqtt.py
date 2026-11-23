@@ -153,7 +153,6 @@ class HaMqttPublisher:
         self._pairing_cmd_topic = f"{self._base}/bridge/pairing/set"
         self._pairing_state_topic = f"{self._base}/bridge/pairing/state"
         self._pairing_cb = None
-        self._pairing_discovered = False
         self._pairing_last_state = "off"   # last published pairing-active state
 
         self._client = mqtt.Client(
@@ -185,7 +184,6 @@ class HaMqttPublisher:
             # Re-publish discovery for all known bikes after reconnect
             self._discovered.clear()
             self._bridge_discovered = False
-            self._pairing_discovered = False
             # Announce the bridge itself as online (counterpart to the LWT).
             self.publish_bridge_discovery()
             self._client.publish(
@@ -460,7 +458,6 @@ class HaMqttPublisher:
             }),
             retain=True,
         )
-        self._pairing_discovered = True
         log.info("Published HA discovery for pairing button + status")
 
     def publish_forget_discovery(self, callback) -> None:

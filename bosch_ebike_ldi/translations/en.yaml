@@ -1,7 +1,10 @@
 configuration:
   bridge_name:
     name: Accessory name
-    description: The name the bike and the Flow app show for this app.
+    description: >-
+      The name this app advertises, which you pick when adding it as an
+      accessory in the Flow app. The accessory's own screen in the Flow app
+      shows the host's Bluetooth name instead.
   adapter:
     name: Bluetooth adapter
     description: Adapter to use, e.g. hci0, or "auto" for the first one found.
@@ -17,18 +20,21 @@ configuration:
   battery_wh:
     name: Battery size (Wh)
     description: >-
-      Nominal energy of the bike's battery, used only for the "Estimated
-      Remaining Energy" sensor. PowerTube 800 = 800. A bike listed under
-      Bikes can set its own battery_wh.
+      Nominal energy of the bike's battery, for the "Estimated Remaining
+      Energy" sensor and for the riding stats until a full reading has the
+      battery's own value. PowerTube 800 = 800. Each bike can have its own on
+      the page.
   bikes:
     name: Bikes
     description: >-
-      Optional. Bikes are added with the "Pair selected bike" or "Start
-      pairing" buttons; list one here (by Bluetooth address) only to give it a
-      name or its own battery_wh.
+      Optional. Bikes are added on the app's page ("This is my bike"); list
+      one here (by Bluetooth address) only to give it a name or its own
+      battery_wh.
   mcsp:
-    name: MCSP exploration
-    description: Read the Flow app's channel (read-only) when the bike exposes it.
+    name: Full readings
+    description: >-
+      Read battery health, cycles, motor hours and more over the Flow app's
+      channel (read-only).
   mcsp_connect:
     name: Automatic full readings
     description: >-

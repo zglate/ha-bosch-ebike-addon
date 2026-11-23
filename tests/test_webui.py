@@ -17,7 +17,7 @@ def server(tmp_path):
         (tmp_path / name / "report.json").write_text("{}")
     (tmp_path / "not-a-run").mkdir()
     calls = []
-    state = {"version": "0.7.0", "bikes": [{"address": "00:04:63:8B:EE:74", "name": "Range"}]}
+    state = {"version": "0.7.0", "bikes": [{"address": "00:04:63:AA:BB:01", "name": "Range"}]}
     srv = webui.start(str(tmp_path), port=0, state=lambda: state,
                       action=lambda a, p: calls.append((a, p)))
     base = f"http://127.0.0.1:{srv.server_address[1]}"
@@ -43,8 +43,8 @@ def test_page_and_state(server):
 def test_actions_reach_the_bridge_and_unknown_ones_are_refused(server):
     base, calls = server
     assert json.loads(post(base + "/api/action",
-                           {"action": "read", "address": "00:04:63:8B:EE:74"}).read())["ok"]
-    assert calls == [("read", {"address": "00:04:63:8B:EE:74"})]
+                           {"action": "read", "address": "00:04:63:AA:BB:01"}).read())["ok"]
+    assert calls == [("read", {"address": "00:04:63:AA:BB:01"})]
     with pytest.raises(urllib.error.HTTPError) as err:
         post(base + "/api/action", {"action": "write_setting"})
     assert err.value.code == 400 and len(calls) == 1
