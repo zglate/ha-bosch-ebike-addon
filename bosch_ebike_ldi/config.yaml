@@ -1,5 +1,5 @@
 name: Bosch eBike
-version: "0.8.2"
+version: "0.8.3"
 slug: bosch_ebike_ldi
 description: >-
   Early version. Battery health, charging, rides, range, messages and live

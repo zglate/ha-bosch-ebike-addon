@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.3 – recent values stay visible
+
+- After a reading the charge stays on the page with its age
+  ("96 % · 29 min ago", and the charger state likewise); only values older
+  than 6 hours show as unknown. 0.8.2 hid even a value read minutes ago.
+
 ## 0.8.2 – the page doesn't pass off old values as current
 
 - While the bike isn't connected, its charge is **unknown**: the ring shows

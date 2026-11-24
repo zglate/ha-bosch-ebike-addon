@@ -355,11 +355,16 @@ function day(t) {
 }
 const km = b => b.ldi.odometer_km ?? (b.mcsp.odometer_m != null ? b.mcsp.odometer_m / 1000 : null);
 const charging = b => b.ldi.charger_connected ?? b.mcsp.charging_active ?? null;
-// The charge ring only shows what the bike says now: while it isn't
-// connected the charge is unknown (the last value could be days old).
+// The charge ring shows what the bike says now, or a recent value with its
+// age ("96% · 29 min ago"). Older than RECENT_SEC it is unknown: the last
+// value could be days old.
+const RECENT_SEC = 6 * 3600;
 const current = b => b.live || b.reading;
-const ringPct = b => current(b) ? charge(b) : null;
-const ringSub = b => current(b) ? (charging(b) ? "charging" : null) : "unknown";
+const recent = b => !current(b) && b.last_seen
+  && (Date.now() - Date.parse(b.last_seen)) / 1000 < RECENT_SEC;
+const ringPct = b => current(b) || recent(b) ? charge(b) : null;
+const ringSub = b => current(b) ? (charging(b) ? "charging" : null)
+  : recent(b) && charge(b) != null ? ago(b.last_seen) : "unknown";
 const hasDetails = b => b.mcsp.battery_health != null || b.mcsp.charge_cycles != null;
 
 function status(b) {
@@ -538,6 +543,7 @@ function bikePage(b) {
     statsCard(b),
     section("battery", "Battery", details || p != null ? rows([
       ["Charge", p == null ? null : current(b) ? Math.round(p) + "%"
+        : recent(b) ? Math.round(p) + "% · " + ago(b.last_seen)
         : "Unknown" + (seenDay ? " · was " + Math.round(p) + "% on " + seenDay : "")],
       ["Energy left", fmt(m.remaining_energy) && fmt(m.remaining_energy) + " Wh"],
       ["Usable energy when full", fmt(m.system_usable_energy) && fmt(m.system_usable_energy) + " Wh"],
@@ -546,7 +552,9 @@ function bikePage(b) {
       ["Energy delivered so far", fmt(m.lifetime_delivered_wh) && fmt(m.lifetime_delivered_wh) + " Wh"],
     ]) : $("div", {class: "empty"}, "Shown after a full reading.")),
     section("plug", "Charging", rows([
-      ["Charger", !current(b) ? "Unknown" : ch == null ? "—" : !ch ? "Not plugged in"
+      ["Charger", !current(b) ? (recent(b) && ch != null
+          ? (ch ? "Plugged in" : "Not plugged in") + " · " + ago(b.last_seen) : "Unknown")
+        : ch == null ? "—" : !ch ? "Not plugged in"
         : (p != null && p >= 100) ? "Plugged in · full" : "Plugged in · charging"],
       ["Charging mode", m.charging_mode ?? "—"],
       ["Charge limit", m.charge_limit != null ? m.charge_limit + "%" : (m.charging_mode ? "None set" : "—")],
