@@ -78,8 +78,11 @@ does, and bonds only while the adapter is pairable. The tests cover:
 - LDI pairing and data;
 - checks when the bike advertises (charging: full reading; not charging: let
   go), the full-reading window and its time limit;
-- the read-only guarantee: every byte sent is checked, there are no requests
-  to command datapoints, and the sweep covers exactly the readable table;
+- the read-only guarantee: every byte sent is checked, the only call is the
+  remote-battery getter with a remote's number, every other call (play
+  sound, buzzer, remote connect/clear, button simulation ...) is refused, and
+  the sweep covers exactly the readable table;
+- the wireless remote's battery: read like the Flow app, low alert once;
 - NOT_READY and OVERLOADED handling, silent links, source-address fallback;
 - the page, its actions and downloads;
 - range, messages, ride computer, charging and riding stats;

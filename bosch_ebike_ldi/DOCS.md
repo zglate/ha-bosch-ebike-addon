@@ -89,6 +89,9 @@ datapoint once, gently paced, and pauses if the bike moves (`mcsp_sweep`).
 
 ### Notifications
 
+- **Remote battery low:** once when a wireless remote's coin cell (Mini
+  Remote) reads 20 % or less at a full reading; the page shows the same
+  alert. It clears by itself once a new cell reads higher.
 - **Fully charged:** once per charge (option `notify_full`). For a push to
   your phone instead, make an automation on the bike's **Battery SoC**
   sensor going to 100 while **Charger Connected** is on.
@@ -99,8 +102,9 @@ datapoint once, gently paced, and pauses if the bike moves (`mcsp_sweep`).
 
 - Writes a setting, sends a command, touches eBike Lock, ownership, keys or
   firmware. Every outgoing MCSP frame is checked against a read-only allowlist
-  before it is sent, and command datapoints are excluded from the table
-  entirely.
+  before it is sent: reads and subscriptions, plus exactly one call, the
+  getter the Flow app uses for a wireless remote's battery (with nothing but
+  the remote's number). Every other call is refused.
 - Answers the bike's requests with anything but "unsupported".
 - Connects to a Bosch bike that isn't yours (it logs it and moves on).
 - Holds your bike: a check lets go within seconds unless the bike is
@@ -127,8 +131,9 @@ Health, Charge Cycles, Battery and drive unit temperatures, Battery Capacity
 (Ah), System Usable Energy, Remaining Energy, Lifetime Delivered Energy (Wh)
 and Charge (Ah), Power-on Time, Power-on Time with Motor Support, Charging
 Mode and Charge Limit (the battery's own charging setting), Range per assist
-mode, Bike Messages, the last ride (moving time, average speed, energy,
-calories, jumps) and software versions. Values that only change while riding
+mode, Bike Messages, Remote Battery (the wireless remote's coin cell; the
+lowest if there are several), the last ride (moving time, average speed,
+energy, calories, jumps) and software versions. Values that only change while riding
 (motor power, torque, assist mode) mostly show the last read.
 
 **Status:** a plain-language summary per bike; its attributes include the

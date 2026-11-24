@@ -45,8 +45,9 @@ def test_table_has_the_key_datapoints():
 
 
 def test_every_curated_datapoint_exists_and_is_readable():
+    import mcsp
     curated = set(dps.CURATED_READS) | set(dps.CURATED_SUBSCRIBES) | {
-        e.id for e in dps.ENTITIES}
+        e.id for e in dps.ENTITIES if e.id not in mcsp.SAFE_CALLS}   # calls: see test_mcsp
     missing = [hex(i) for i in curated if i not in TABLE or not TABLE[i].readable]
     assert missing == []
 

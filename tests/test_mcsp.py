@@ -170,3 +170,44 @@ def test_only_setup_transport_commands_are_allowed():
         mcsp.check_outgoing(0, b"\x02\x01\x00\x00\x10\x00")   # transmit window
     with pytest.raises(mcsp.UnsafeFrame):
         mcsp.check_outgoing(2, b"\x00")                       # resource channel
+
+
+# ── The one allowed call: a wireless remote's battery ───────────────────────
+
+@pytest.mark.parametrize("remote", [0, 1, 7, 255])
+def test_the_remote_battery_getter_is_allowed_with_a_remote_id(remote):
+    mcsp.check_outgoing(1, mcsp.request(mcsp.RPC, mcsp.GET_REMOTE_BATTERY, 1,
+                                        body=mcsp.remote_id_body(remote)))
+
+
+@pytest.mark.parametrize("body", [b"\x08\x01\x10\x01", b"\x10\x01", b"\x0a\x00",
+                                  b"\x08\x80\x02", b"\x08"])
+def test_the_remote_battery_getter_is_refused_with_anything_else(body):
+    with pytest.raises(mcsp.UnsafeFrame):
+        mcsp.check_outgoing(1, mcsp.request(mcsp.RPC, mcsp.GET_REMOTE_BATTERY, 1, body=body))
+
+
+@pytest.mark.parametrize("dp", [0x2289, 0x2288, 0x220A, 0x220B, 0x2211, 0x221E, 0x2043])
+def test_every_other_call_is_still_refused(dp):
+    """Play sound, buzzer, connect/disconnect/clear remotes, device info,
+    simulated button presses: refused even with a harmless-looking argument."""
+    with pytest.raises(mcsp.UnsafeFrame):
+        mcsp.check_outgoing(1, mcsp.request(mcsp.RPC, dp, 1, body=mcsp.remote_id_body(1)))
+    with pytest.raises(mcsp.UnsafeFrame):
+        mcsp.check_outgoing(1, mcsp.request(mcsp.RPC, dp, 1))
+
+
+def test_writes_to_the_remote_battery_datapoint_are_refused():
+    with pytest.raises(mcsp.UnsafeFrame):
+        mcsp.check_outgoing(1, mcsp.request(mcsp.WRITE, mcsp.GET_REMOTE_BATTERY, 1,
+                                            body=mcsp.remote_id_body(1)))
+
+
+def test_the_real_bikes_remote_list_and_battery_replies():
+    assert mcsp.remote_ids(bytes.fromhex("0a000a020801")) == [0, 1]     # captured 24 Nov
+    assert mcsp.remote_battery_level(bytes.fromhex("0a020855")) == 85   # nullable wrapper
+    assert mcsp.remote_battery_level(bytes.fromhex("0855")) == 85       # bare service
+    # Empty, zero or nonsense is "no value", never a false "battery low".
+    assert mcsp.remote_battery_level(bytes.fromhex("0a00")) is None
+    assert mcsp.remote_battery_level(b"") is None
+    assert mcsp.remote_battery_level(bytes.fromhex("0a0308c801")) is None   # 200 %

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.9.0 – remote battery
+
+- **Remote battery:** the wireless remote's coin cell (Mini Remote), read at
+  every full reading the way the Flow app does it. On the page (Battery card),
+  as a **Remote Battery** sensor, and an alert on the page plus one Home
+  Assistant notification when it is 20 % or lower (cleared once a new cell
+  reads higher).
+- The read-only guard now allows exactly one call: the System Controller's
+  battery getter for a wireless remote (`0x2220`), with nothing but the
+  remote's number as its argument. Every other call stays refused; tests
+  cover play-sound, buzzer, remote connect/disconnect/clear and button
+  simulation. An empty or out-of-range reply counts as "no value", never as a
+  low battery.
+- The charge shown while the bike isn't connected is aged by when it was
+  read, not by when the bike was last heard (an advert says nothing about the
+  charge).
+
 ## 0.8.3 – recent values stay visible
 
 - After a reading the charge stays on the page with its age

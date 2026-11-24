@@ -901,3 +901,31 @@ def test_the_bikes_ride_computer_reaches_the_page_and_home_assistant(harness):
                      and s, "ride computer", timeout=60)
     assert state["ride_jumps"] == 7 and state["ride_moving_time"] == 5520
     assert state["ride"]["start_odometer_m"] == 64362 and state["ride"]["tricks"]["2"] == 1
+
+
+def test_the_wireless_remotes_battery_is_read_like_the_flow_app_does(harness):
+    """The System Controller lists its wireless remotes (0x2210: ids 0 and 1 on
+    the real bike); the battery of each comes from the one call we allow,
+    bleCentralGetBatteryService with the remote's id. Low: alert once."""
+    values = {**VALUES, "0x0089": "0801", "0x2210": "0a000a020801"}
+    calls = {"0x2220": {"": "0a020855",          # remote 0: 85 %
+                        "0801": "0a02080f"}}     # remote 1: 15 %
+    harness.control.EnableMcsp(BIKE, json.dumps({"values": values, "calls": calls,
+                                                 "answers_only_app_links": True}))
+    sup = FakeSupervisor()
+    try:
+        harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": BIKE}],
+                             env={**PEEK, "SUPERVISOR_URL": sup.url, "SUPERVISOR_TOKEN": "tok"})
+        harness.control.Advertise(BIKE, ADVERT, True)
+        state = wait_for(lambda: len((s := harness.mqtt.json(MCSP_TOPIC) or {}).get(
+            "remotes") or {}) == 2 and s, "both remotes", timeout=60)
+        assert state["remotes"]["0"]["level"] == 85 and state["remotes"]["1"]["level"] == 15
+        assert state["remote_battery"] == 15
+        key = f"bosch_ebike_remote_low_{SLUG.replace('_', '')}"
+        wait_for(lambda: notes(sup, key), "low-battery notification")
+        # Only that one call, only with a remote id as its argument.
+        calls_sent = [m for m in harness.mcsp_log()["messages"] if m["op"] == 4]
+        assert {m["dst"] & 0x7FFF for m in calls_sent} == {0x2220}
+        assert {m["body"] for m in calls_sent} == {"", "0801"}
+    finally:
+        sup.server.shutdown()

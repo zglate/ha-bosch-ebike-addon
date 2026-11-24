@@ -44,13 +44,20 @@ asking, cancels its timers and reports why.
 
 ## 3. Read-only
 
-- The datapoint table carries only readable datapoints; command datapoints
-  are excluded when it is generated.
+- The datapoint table marks what may be read: 694 readable datapoints; the
+  185 calls (RPC) and 88 other datapoints are in it only as not readable, and
+  nothing is ever requested from them, except the one call below.
 - Every outgoing MCSP frame is checked before it is written
   (`mcsp.check_outgoing`): on the transport channel only the version,
   flow-control and segmentation commands; on the message bus only READ,
-  SUBSCRIBE and UNSUBSCRIBE requests without a body, and "unsupported"
-  responses without a body. Anything else raises instead of being sent.
+  SUBSCRIBE and UNSUBSCRIBE requests without a body, "unsupported"
+  responses without a body, and one call (RPC): `bleCentralGetBatteryService`
+  (`0x2220`) with exactly a remote id as its argument. Anything else raises
+  instead of being sent.
+- That call is a getter: the System Controller is a Bluetooth central for
+  wireless remotes (the Mini Remote, on a coin cell), and the Flow app asks it
+  for each remote's battery level this way. The remotes come from
+  `bleCentralDatabase` (`0x2210`); changes arrive on `0x2221`.
 - So requests to the add-on from the bike get "unsupported".
 - At most 4 requests in flight, 25 ms apart; back off on OVERLOADED; retry
   NOT_READY a few times; try the other source address if one stays silent.

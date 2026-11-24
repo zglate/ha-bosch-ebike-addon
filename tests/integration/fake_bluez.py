@@ -199,6 +199,10 @@ class FakeMcspBike:
     def __init__(self, rx, config):
         self.rx = rx
         self.values = {int(k, 16): bytes.fromhex(v) for k, v in config.get("values", {}).items()}
+        # Calls (RPC) the fake answers: {"0x2220": {"<argument hex>": "<reply hex>"}}.
+        self.calls = {(int(dp, 16), arg): bytes.fromhex(reply)
+                      for dp, answers in config.get("calls", {}).items()
+                      for arg, reply in answers.items()}
         self.overload_once = {int(k, 16) for k in config.get("overload_once", [])}
         self.only_src = int(config["only_src"], 16) if config.get("only_src") else None
         self.starts_handshake = config.get("starts_handshake", True)
@@ -282,6 +286,13 @@ class FakeMcspBike:
             else:
                 self.send(1, dp.to_bytes(2, "big") + src.to_bytes(2, "big")
                           + bytes([0x10 | seq, 2]))
+        elif op == 4:                                                 # RPC
+            answer = self.calls.get((dp, payload[5:].hex()))
+            if answer is not None:
+                self.send(1, dp.to_bytes(2, "big") + reply_to + bytes([0x50 | seq]) + answer)
+            else:
+                self.send(1, dp.to_bytes(2, "big") + src.to_bytes(2, "big")
+                          + bytes([0x50 | seq, 2]))
         elif op in (6, 8):                                            # (UN)SUBSCRIBE
             self.send(1, dp.to_bytes(2, "big") + reply_to + bytes([((op + 1) << 4) | seq]))
             if op == 6 and dp in self.values:

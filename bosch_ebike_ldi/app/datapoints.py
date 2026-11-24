@@ -269,6 +269,8 @@ ENTITIES = [
     Entity(0x2151, "active_issue_raw", "Active Issue (raw)"),
     # The bike's current messages (Bosch fault codes), decoded with faults.json.
     Entity(0x109A, "bike_messages", "Bike Messages"),
+    # A wireless remote's coin cell (Mini Remote), from the System Controller.
+    Entity(0x2220, "remote_battery", "Remote Battery", "%", "battery", "measurement"),
     # The ride computer: last (or current) ride.
     Entity(0x2243, "ride_moving_time", "Last Ride Moving Time", "s", "duration", "measurement"),
     Entity(0x2246, "ride_average_speed", "Last Ride Average Speed", "km/h", "speed",
@@ -325,6 +327,8 @@ def entity_state(entity: Entity, value: Any, names: list[str] | None = None) -> 
         return charging_setting(entity.key, value)
     if entity.key == "ride_jumps":
         return trick(value, 1)
+    if entity.key == "remote_battery":
+        return value.get("level") if isinstance(value, dict) else None
     if entity.key == "bike_messages":
         import faults
         return faults.summary(value)

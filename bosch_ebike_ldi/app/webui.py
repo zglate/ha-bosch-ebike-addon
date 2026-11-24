@@ -360,11 +360,14 @@ const charging = b => b.ldi.charger_connected ?? b.mcsp.charging_active ?? null;
 // value could be days old.
 const RECENT_SEC = 6 * 3600;
 const current = b => b.live || b.reading;
-const recent = b => !current(b) && b.last_seen
-  && (Date.now() - Date.parse(b.last_seen)) / 1000 < RECENT_SEC;
+// When the charge shown offline was read: the full reading's own time, not
+// "last heard" (an advert says nothing about the charge).
+const valueTime = b => b.mcsp.last_seen || (b.last_good && b.last_good.at) || null;
+const recent = b => !current(b) && valueTime(b)
+  && (Date.now() - Date.parse(valueTime(b))) / 1000 < RECENT_SEC;
 const ringPct = b => current(b) || recent(b) ? charge(b) : null;
 const ringSub = b => current(b) ? (charging(b) ? "charging" : null)
-  : recent(b) && charge(b) != null ? ago(b.last_seen) : "unknown";
+  : recent(b) && charge(b) != null ? ago(valueTime(b)) : "unknown";
 const hasDetails = b => b.mcsp.battery_health != null || b.mcsp.charge_cycles != null;
 
 function status(b) {
@@ -487,12 +490,18 @@ function rowsEl(list) {
 
 function bikePage(b) {
   const m = b.mcsp, [cls, text] = status(b), p = charge(b), ch = charging(b);
-  const seenDay = b.last_seen ? new Date(b.last_seen).toLocaleDateString(undefined,
+  const readAt = valueTime(b);
+  const seenDay = readAt ? new Date(readAt).toLocaleDateString(undefined,
     {month: "short", day: "numeric"}) : null;
   const details = hasDetails(b);
   const fw = b.firmware || [];
   const updates = fw.filter(f => f.newer);
   const issue = problem(b);
+  const REMOTE_LOW = 20;
+  const remoteLow = m.remote_battery != null && m.remote_battery <= REMOTE_LOW;
+  const remoteList = Object.values(m.remotes || {});
+  const remoteText = !remoteList.length ? null : remoteList.map(r => r.level + "%").join(" · ") +
+    (remoteList[0].at ? " (" + ago(remoteList[0].at) + ")" : "");
 
   const hero = $("div", {class: "card pad hero"},
     ring(ringPct(b), ringSub(b)),
@@ -502,6 +511,8 @@ function bikePage(b) {
       $("div", {class: "pill " + cls}, $("span", {class: "d"}), text),
       $("div", {class: "fresh"}, freshness(b)),
       issue ? $("div", {class: "alert"}, icon("info"), issue) : null,
+      remoteLow ? $("div", {class: "alert"}, icon("info"), "Remote battery low (" +
+        m.remote_battery + "%): replace the remote's coin cell soon.") : null,
       $("div", {class: "cta"},
         b.reading
           ? $("button", {onclick: () => act("stop"), disabled: busy}, "Stop")
@@ -543,17 +554,18 @@ function bikePage(b) {
     statsCard(b),
     section("battery", "Battery", details || p != null ? rows([
       ["Charge", p == null ? null : current(b) ? Math.round(p) + "%"
-        : recent(b) ? Math.round(p) + "% · " + ago(b.last_seen)
+        : recent(b) ? Math.round(p) + "% · " + ago(readAt)
         : "Unknown" + (seenDay ? " · was " + Math.round(p) + "% on " + seenDay : "")],
       ["Energy left", fmt(m.remaining_energy) && fmt(m.remaining_energy) + " Wh"],
       ["Usable energy when full", fmt(m.system_usable_energy) && fmt(m.system_usable_energy) + " Wh"],
       ["Capacity", fmt(m.battery_capacity, 1) && fmt(m.battery_capacity, 1) + " Ah"],
       ["Temperature", fmt(m.battery_temperature, 1) && fmt(m.battery_temperature, 1) + " °C"],
       ["Energy delivered so far", fmt(m.lifetime_delivered_wh) && fmt(m.lifetime_delivered_wh) + " Wh"],
+      ["Remote battery", remoteText],
     ]) : $("div", {class: "empty"}, "Shown after a full reading.")),
     section("plug", "Charging", rows([
       ["Charger", !current(b) ? (recent(b) && ch != null
-          ? (ch ? "Plugged in" : "Not plugged in") + " · " + ago(b.last_seen) : "Unknown")
+          ? (ch ? "Plugged in" : "Not plugged in") + " · " + ago(readAt) : "Unknown")
         : ch == null ? "—" : !ch ? "Not plugged in"
         : (p != null && p >= 100) ? "Plugged in · full" : "Plugged in · charging"],
       ["Charging mode", m.charging_mode ?? "—"],

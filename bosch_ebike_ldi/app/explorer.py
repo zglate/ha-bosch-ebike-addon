@@ -286,7 +286,7 @@ class McspSession:
         self._table, self._capture, self._hooks = table, capture, hooks
         self._deframer, self._seq = mcsp.Deframer(), mcsp.Sequence()
         self._queue: deque = deque()
-        self._queued: set = set()         # (op, datapoint) waiting or in flight
+        self._queued: set = set()         # (op, datapoint, body) waiting or in flight
         self._pending: dict = {}          # (datapoint, seq) -> request dict
         self._outstanding: dict = {}      # phase -> requests not yet finished
         self._timers: set = set()
@@ -418,7 +418,7 @@ class McspSession:
             return 0
         ids = [i for i, dp in sorted(self._table.items())
                if dp.readable and i not in self.answered
-               and (mcsp.READ, i) not in self._queued]
+               and (mcsp.READ, i, b"") not in self._queued]
         self.status["sweep_total"] += len(ids)
         self._milestone("sweep_started")
         for dp in ids:
@@ -494,19 +494,20 @@ class McspSession:
     # ── Sending ──────────────────────────────────────────────────────────────
 
     def _enqueue(self, op: int, dp: int, src: int, phase: str, tries: int = 0,
-                 front: bool = False) -> None:
+                 front: bool = False, body: bytes = b"") -> None:
         if self.silent:
             return
         entry = self._table.get(dp)
-        if entry is None or not entry.readable:
+        allowed_call = op == mcsp.RPC and dp in mcsp.SAFE_CALLS
+        if not allowed_call and (entry is None or not entry.readable):
             self.status["skipped_not_readable"] += 1
             self._capture.event("request_skipped", bike=self.address, id=f"0x{dp:04X}",
                                 op=mcsp.OP_NAMES[op], reason="not marked readable")
             return
-        if (op, dp) in self._queued and tries == 0:
+        if (op, dp, body) in self._queued and tries == 0:
             return
-        self._queued.add((op, dp))
-        item = {"op": op, "dp": dp, "src": src, "phase": phase, "tries": tries}
+        self._queued.add((op, dp, body))
+        item = {"op": op, "dp": dp, "src": src, "phase": phase, "tries": tries, "body": body}
         (self._queue.appendleft if front else self._queue.append)(item)
         self._outstanding[phase] = self._outstanding.get(phase, 0) + 1
         if self._release_timer is not None:          # new work: postpone the release
@@ -533,7 +534,8 @@ class McspSession:
         self._pending[key] = item
         self.status["requests_sent"] += 1
         self._send_frames(mcsp.MESSAGEBUS_CHANNEL,
-                          mcsp.request(item["op"], item["dp"], seq, src=item["src"]))
+                          mcsp.request(item["op"], item["dp"], seq, item.get("body", b""),
+                                       src=item["src"]))
         self._pump_timer = self._after(self.SEND_GAP_MS, self._unpause)
 
     def _unpause(self) -> None:
@@ -563,7 +565,7 @@ class McspSession:
                 "tx_error", bike=self.address, data=data, error=str(e)))
 
     def _finish(self, item: dict) -> None:
-        self._queued.discard((item["op"], item["dp"]))
+        self._queued.discard((item["op"], item["dp"], item.get("body", b"")))
         phase = item["phase"]
         if phase == "sweep":
             self.status["sweep_done"] += 1
@@ -678,8 +680,24 @@ class McspSession:
             self._capture.event("overloaded", bike=self.address, id=f"0x{msg.src:04X}")
             self._outstanding[item["phase"]] -= 1
             self._after(self.OVERLOAD_BACKOFF_MS, self._enqueue, item["op"], item["dp"],
-                        item["src"], item["phase"], item["tries"] + 1, True)
+                        item["src"], item["phase"], item["tries"] + 1, True,
+                        item.get("body", b""))
             return
+        if item["op"] == mcsp.RPC:
+            self._on_call_result(item, msg, latency)
+            self._finish(item)
+            self._pump()
+            return
+        if msg.status == 0 and item["dp"] == mcsp.REMOTE_DATABASE:
+            # The wireless remotes the System Controller knows: ask each for
+            # its battery, in the same phase (before this one finishes).
+            try:
+                ids = mcsp.remote_ids(msg.body)
+            except ValueError:
+                ids = []
+            for remote in ids:
+                self._enqueue(mcsp.RPC, mcsp.GET_REMOTE_BATTERY, item["src"], item["phase"],
+                              body=mcsp.remote_id_body(remote))
         if msg.status == 0:
             key = self._source(item)
             self.status["ok_by_source"][key] = self.status["ok_by_source"].get(key, 0) + 1
@@ -690,6 +708,30 @@ class McspSession:
         self._record(msg.src, self._source(item), msg.status, msg.body, latency)
         self._finish(item)
         self._pump()
+
+    def _on_call_result(self, item: dict, msg: mcsp.Message, latency: int) -> None:
+        """A wireless remote's battery level (the only call we make)."""
+        body = item.get("body", b"")
+        remote = 0 if not body else mcsp.remote_ids(b"\x0a" + bytes([len(body)]) + body)[0]
+        status_name = mcsp.STATUS_NAMES.get(msg.status, f"status_{msg.status}")
+        level = error = None
+        if msg.status == 0:
+            try:
+                level = mcsp.remote_battery_level(msg.body)
+            except ValueError as exc:
+                error = str(exc)
+        else:
+            self.status["errors"][status_name] = self.status["errors"].get(status_name, 0) + 1
+        self._capture.event("datapoint", bike=self.address, id=f"0x{item['dp']:04X}",
+                            label="RemoteControl.bleCentralGetBatteryService",
+                            status=status_name, source=self._source(item), remote=remote,
+                            raw=msg.body.hex(), latency_ms=latency, value=level,
+                            decode_error=error)
+        log.info("[%s] Wireless remote %d battery: %s (reply %s)", self.address, remote,
+                 f"{level} %" if level is not None else
+                 (status_name if msg.status else "no value"), msg.body.hex() or "empty")
+        if level is not None:
+            self._call_hook("on_value", item["dp"], {"remote": remote, "level": level})
 
     def _on_bike_request(self, msg: mcsp.Message) -> None:
         """The bike asking the 'phone' for something. We implement nothing,

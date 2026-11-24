@@ -195,6 +195,92 @@ class Sequence:
 SAFE_COMMANDS = {CMD_VERSION, CMD_DISABLE_FLOW_CONTROL, CMD_MAX_SEGMENTATION_PACKET}
 SAFE_REQUESTS = {READ, SUBSCRIBE, UNSUBSCRIBE}
 
+# The one call (RPC) allowed: a getter that changes nothing. The System
+# Controller is a Bluetooth central for wireless remotes (Mini Remote); the
+# Flow app asks it for a remote's battery level with this call, passing only
+# the remote's id (a BleCentralPeripheralIdentifier). Any other call, or any
+# other argument, is refused.
+GET_REMOTE_BATTERY = 0x2220                    # RemoteControl.bleCentralGetBatteryService
+SAFE_CALLS = {GET_REMOTE_BATTERY}
+REMOTE_DATABASE = 0x2210                       # RemoteControl.bleCentralDatabase
+REMOTE_BATTERY_CHANGED = 0x2221                # RemoteControl.bleCentralBatteryServiceChanged
+
+
+def _varint(value: int) -> bytes:
+    out = bytearray()
+    while True:
+        byte, value = value & 0x7F, value >> 7
+        out.append(byte | (0x80 if value else 0))
+        if not value:
+            return bytes(out)
+
+
+def remote_id_body(remote_id: int) -> bytes:
+    """BleCentralPeripheralIdentifier {value: id}; id 0 is the empty message."""
+    return b"" if remote_id == 0 else b"\x08" + _varint(remote_id)
+
+
+def is_remote_id_body(body: bytes) -> bool:
+    """True only for exactly what remote_id_body() produces (ids up to 255)."""
+    return any(body == remote_id_body(i) for i in range(256))
+
+
+def _fields(body: bytes) -> list[tuple[int, int, object]]:
+    """Top-level protobuf fields: (number, wire type, int or bytes)."""
+    out, pos = [], 0
+    while pos < len(body):
+        key, pos = _read_varint(body, pos)
+        number, wire = key >> 3, key & 7
+        if wire == 0:
+            value, pos = _read_varint(body, pos)
+        elif wire == 2:
+            size, pos = _read_varint(body, pos)
+            value, pos = body[pos:pos + size], pos + size
+            if pos > len(body):
+                raise ValueError("truncated field")
+        else:
+            raise ValueError(f"wire type {wire}")
+        out.append((number, wire, value))
+    return out
+
+
+def _read_varint(data: bytes, pos: int) -> tuple[int, int]:
+    value = shift = 0
+    while True:
+        if pos >= len(data) or shift > 63:
+            raise ValueError("bad varint")
+        byte = data[pos]
+        pos += 1
+        value |= (byte & 0x7F) << shift
+        shift += 7
+        if not byte & 0x80:
+            return value, pos
+
+
+def remote_ids(body: bytes) -> list[int]:
+    """BleCentralDatabase: repeated BleCentralPeripheralIdentifier -> ids."""
+    ids = []
+    for number, wire, value in _fields(body):
+        if number == 1 and wire == 2:
+            inner = dict((n, v) for n, w, v in _fields(value) if w == 0)
+            ids.append(int(inner.get(1, 0)))
+    return ids
+
+
+def remote_battery_level(body: bytes) -> int | None:
+    """BleBatteryServiceNullable {value: BleBatteryService {battery_level}},
+    or a bare BleBatteryService {battery_level}. Only 1..100 counts: an empty
+    reply (no value, an empty slot, a remote that didn't answer) is None, never
+    0 %, so it can't raise a false "battery low"."""
+    level = None
+    for number, wire, value in _fields(body):
+        if number == 1 and wire == 2:
+            inner = dict((n, v) for n, w, v in _fields(value) if w == 0)
+            level = inner.get(1)
+        elif number == 1 and wire == 0:
+            level = value
+    return int(level) if isinstance(level, int) and 1 <= level <= 100 else None
+
 
 def check_outgoing(channel: int, payload: bytes) -> None:
     """Raise UnsafeFrame unless the payload is read-only by construction."""
@@ -206,6 +292,9 @@ def check_outgoing(channel: int, payload: bytes) -> None:
         raise UnsafeFrame(f"channel {channel} not allowed")
     msg = parse_message(payload)
     if msg.kind == "request" and msg.op in SAFE_REQUESTS and not msg.body:
+        return
+    if msg.kind == "request" and msg.op == RPC and msg.dst in SAFE_CALLS \
+            and is_remote_id_body(msg.body):
         return
     if msg.kind == "response" and msg.status == UNSUPPORTED and not msg.body:
         return

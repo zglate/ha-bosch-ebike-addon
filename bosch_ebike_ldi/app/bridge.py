@@ -1357,11 +1357,23 @@ class EbikeBridge:
             ride[datapoints.ACTIVITY[dp_id]] = value
         if dp_id == 0x109A:                       # the bike's current messages
             bike.setdefault("mcsp_state", {})["messages"] = faults.find(value)
+        if dp_id == mcsp.GET_REMOTE_BATTERY and isinstance(value, dict):
+            self._remote_battery(addr, value.get("remote"), value.get("level"))
+        elif dp_id == mcsp.REMOTE_BATTERY_CHANGED and isinstance(value, dict):
+            # Pushed by the bike when a remote's level changes:
+            # {1: {1: remote id}, 2: {1: level}} (an empty id is remote 0).
+            ident = value.get(1, value.get("1"))
+            service = value.get(2, value.get("2"))
+            remote = ident.get(1, ident.get("1", 0)) if isinstance(ident, dict) else 0
+            if isinstance(service, dict):
+                self._remote_battery(addr, remote, service.get(1, service.get("1", 0)))
         entities = self._entities_by_id.get(dp_id)
         if not entities:
             return
         state = bike.setdefault("mcsp_state", {})
         for entity in entities:
+            if entity.key == "remote_battery":       # set by _remote_battery (lowest)
+                continue
             state[entity.key] = datapoints.entity_state(entity, value,
                                                         bike.get("assist_names"))
         state["last_seen"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -1927,6 +1939,43 @@ class EbikeBridge:
             self._save_state()
             return False
         threading.Thread(target=work, daemon=True).start()
+
+    REMOTE_LOW_PCT = 20          # a remote's coin cell at or below this is "low"
+
+    def _remote_battery(self, addr: str, remote, level) -> None:
+        """A wireless remote's battery level (Mini Remote coin cell): kept per
+        remote, the lowest shown as the Remote Battery sensor, one notification
+        when it gets low (cleared once it's back up, e.g. a new cell)."""
+        try:
+            remote, level = int(remote or 0), int(level)
+        except (TypeError, ValueError):
+            return
+        if not 1 <= level <= 100:              # empty / unknown: never a false "low"
+            return
+        bike = self._bikes.get(addr)
+        if bike is None:
+            return
+        state = bike.setdefault("mcsp_state", {})
+        remotes = state.setdefault("remotes", {})
+        remotes[str(remote)] = {"level": level, "at": datetime.now(timezone.utc).isoformat(
+            timespec="seconds")}
+        lowest = min(r["level"] for r in remotes.values())
+        state["remote_battery"] = lowest
+        self._mqtt.publish_mcsp_discovery(addr, bike["name"])
+        self._mqtt.publish_mcsp_state(addr, state)
+        memory = self._explorer_state.setdefault(addr, {})
+        key = f"remote_low_{addr.replace(':', '').lower()}"
+        if lowest <= self.REMOTE_LOW_PCT and not memory.get("remote_low_notified"):
+            memory["remote_low_notified"] = datetime.now(timezone.utc).isoformat(
+                timespec="seconds")
+            self._save_state()
+            log.info("[%s] Remote battery low: %d %%", addr, lowest)
+            supervisor.notify(key, f"{self._bike_name(addr)}: remote battery low",
+                              f"The wireless remote's battery is at {lowest} %. Replace its "
+                              f"coin cell soon.\n\nDetails on {self._bridge_ref()}.")
+        elif lowest > self.REMOTE_LOW_PCT and memory.pop("remote_low_notified", None):
+            self._save_state()
+            supervisor.dismiss(key)
 
     def _check_full(self, addr: str, soc, charger) -> None:
         """Once per charge: 100 % with the charger connected. Forgotten when
