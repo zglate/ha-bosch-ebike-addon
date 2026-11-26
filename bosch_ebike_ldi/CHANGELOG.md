@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.1 – no empty "last ride"
+
+- **"Last ride, from the bike" no longer shows an empty activity.** The bike
+  keeps only its current activity and opens a new one whenever it wakes, also
+  every ~2 hours on the charger, so readings on the charger saw 0 km. The
+  card now shows the last activity that actually moved, and stays hidden
+  until a reading catches one.
+- "Charging & riding" calls its row **Ridden between charges** (odometer and
+  charge between unplugging and the next plug-in), so the two aren't
+  confused.
+
 ## 0.9.0 – remote battery
 
 - **Remote battery:** the wireless remote's coin cell (Mini Remote), read at

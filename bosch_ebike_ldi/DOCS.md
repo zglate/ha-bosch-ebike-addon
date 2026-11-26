@@ -43,12 +43,16 @@ to it.
   **Read full details**. Below:
   - battery health, charge cycles, distance and motor hours;
   - **messages from the bike** (Bosch fault codes, with what to do);
-  - **last ride, from the bike**: the bike's own ride computer, also for rides
-    without the phone (distance, moving time, speeds, your power, energy,
-    jumps and other tricks; no map, which needs the phone's GPS);
+  - **last ride, from the bike**: the bike's own ride computer (distance,
+    moving time, speeds, your power, energy, jumps and other tricks; no map,
+    which needs the phone's GPS). The bike keeps only its current activity and
+    starts a new, empty one whenever it wakes, also on the charger, so this
+    card only appears once a reading catches an activity that actually moved;
+    usually it won't;
   - **charging & riding**: time to full while charging, the last charge, how
-    long a full charge takes, the last ride between charges, your energy per
-    km and what a full battery is good for;
+    long a full charge takes, what was ridden between the last two charges
+    (from the odometer and charge, so it works without the bike's ride
+    computer), your energy per km and what a full battery is good for;
   - battery, charging, range per assist mode, motor and software (with
     *update available*);
   - **live riding data**: how to set up Bosch's live feed (below);

@@ -436,7 +436,7 @@ function statsCard(b) {
   if (lc) rows.push(["Last charge", Math.round(lc.start_soc) + "% → " + Math.round(lc.end_soc) +
     "% in " + dur(lc.minutes) + " (" + day(lc.start_t) + ")"]);
   if (s.full_charge_minutes) rows.push(["A full charge takes about", dur(s.full_charge_minutes)]);
-  if (lr) rows.push(["Last ride", fmt(lr.km, 1) + " km" + (lr.used_pct != null ? " · " +
+  if (lr) rows.push(["Ridden between charges", fmt(lr.km, 1) + " km" + (lr.used_pct != null ? " · " +
     Math.round(lr.used_pct) + "% of the battery" : "") + (lr.wh ? " · " + fmt(lr.wh) + " Wh" : "")]);
   if (s.wh_per_km) rows.push(["Energy per km", fmt(s.wh_per_km, 1) + " Wh/km"]);
   if (s.range_full_km) rows.push(["A full battery is good for", "about " + s.range_full_km +
@@ -447,9 +447,11 @@ function statsCard(b) {
     : $("div", {class: "empty"}, "Builds up as you charge and ride."));
 }
 function rideCard(b) {
-  const r = (b.mcsp || {}).ride || {}, m = b.mcsp || {};
-  if (r.start_time == null && r.moving_seconds == null) return null;
-  const odo = m.odometer_m ?? (b.ldi.odometer_km != null ? b.ldi.odometer_km * 1000 : null);
+  // The last activity on the bike's ride computer that actually moved (the
+  // bike opens a new, empty one each time it wakes); null until one is seen.
+  const r = b.ride || {}, m = b.mcsp || {};
+  if (!b.ride) return null;
+  const odo = r.end_odometer_m ?? m.odometer_m;
   const km = odo != null && r.start_odometer_m != null ? (odo - r.start_odometer_m) / 1000 : null;
   const when = r.start_time ? new Date(r.start_time * 1000).toLocaleString(undefined,
     {weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"}) : null;

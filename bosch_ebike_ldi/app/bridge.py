@@ -1696,6 +1696,23 @@ class EbikeBridge:
                 best = (when, value)
         return best[1] if best else None
 
+    def _ride_for_page(self, addr: str, mcsp_values: dict) -> dict | None:
+        """The bike's ride computer holds only its current activity, and the
+        bike opens a new, empty one whenever it wakes (also every ~2 h on the
+        charger), so a reading on the charger is usually empty. Keep the last
+        activity that actually moved; None until one is seen."""
+        ride = mcsp_values.get("ride") or {}
+        odo, start = mcsp_values.get("odometer_m"), ride.get("start_odometer_m")
+        moved = (ride.get("moving_seconds") or 0) > 0 or (
+            isinstance(odo, (int, float)) and isinstance(start, (int, float)) and odo - start > 50)
+        memory = self._explorer_state.setdefault(addr, {})
+        if moved:
+            kept = dict(ride, end_odometer_m=odo)
+            if memory.get("ride_kept") != kept:
+                memory["ride_kept"] = kept
+                self._save_state()
+        return memory.get("ride_kept")
+
     def _battery_wh(self, addr: str) -> int:
         return self._explorer_state.get(addr, {}).get("battery_wh") \
             or battery_wh_for(self._cfg, addr)
@@ -1743,7 +1760,9 @@ class EbikeBridge:
                         "battery_soc", "odometer_km", "charger_connected", "speed_kmh",
                         "rider_power", "energy_remaining_wh")},
                     "last_seen": last_seen,
-                    "mcsp": {**saved.get("mcsp", {}), **(bike.get("mcsp_state") or {})},
+                    "mcsp": (merged := {**saved.get("mcsp", {}),
+                                        **(bike.get("mcsp_state") or {})}),
+                    "ride": self._ride_for_page(addr, merged),
                     "model": identity.get("DriveUnit", {}).get("productName"),
                     "battery": identity.get("Battery", {}).get("productName"),
                     "last_read": memory.get("mcsp_window"),

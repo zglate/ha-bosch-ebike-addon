@@ -929,3 +929,39 @@ def test_the_wireless_remotes_battery_is_read_like_the_flow_app_does(harness):
         assert {m["body"] for m in calls_sent} == {"", "0801"}
     finally:
         sup.server.shutdown()
+
+
+def page_bike():
+    try:
+        state = json.loads(urllib.request.urlopen("http://127.0.0.1:8099/api/state",
+                                                  timeout=2).read())
+        return next(iter(state.get("bikes", [])), None)
+    except OSError:
+        return None
+
+
+def test_an_empty_activity_from_a_wake_on_the_charger_isnt_shown_as_the_last_ride(harness):
+    """The real bike opens a new activity whenever it wakes (every ~2 h on the
+    charger): start odometer = current odometer, no moving time. The page's
+    'Last ride, from the bike' must not show that."""
+    values = {**VALUES, "0x0089": "0801", "0x1818": "08b1e407",       # odometer 127537 m
+              "0x2242": "08a0b6d1e106", "0x2245": "08b1e407"}        # activity starts here
+    harness.control.EnableMcsp(BIKE, json.dumps({"values": values,
+                                                 "answers_only_app_links": True}))
+    harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": BIKE}], env=PEEK)
+    harness.control.Advertise(BIKE, ADVERT, True)
+    wait_for(lambda: (harness.mqtt.json(MCSP_TOPIC) or {}).get("ride", {}).get(
+        "start_odometer_m") == 127537, "activity read", timeout=60)
+    bike = wait_for(page_bike, "page")
+    assert bike["ride"] is None
+
+
+def test_a_real_ride_on_the_ride_computer_is_kept_for_the_page(harness):
+    values = {**VALUES, "0x0089": "0801", "0x2243": "08902b",        # moving 5520 s
+              "0x2245": "08eaf603"}                                  # start odo 64362 m
+    harness.control.EnableMcsp(BIKE, json.dumps({"values": values,
+                                                 "answers_only_app_links": True}))
+    harness.start_bridge(open_pairing_on_start=False, bikes=[{"address": BIKE}], env=PEEK)
+    harness.control.Advertise(BIKE, ADVERT, True)
+    bike = wait_for(lambda: (b := page_bike()) and b.get("ride") and b, "ride kept", timeout=60)
+    assert bike["ride"]["moving_seconds"] == 5520 and bike["ride"]["start_odometer_m"] == 64362
